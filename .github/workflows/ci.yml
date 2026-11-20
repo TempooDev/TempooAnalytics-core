@@ -57,8 +57,10 @@ jobs:
       - name: Gateway tests
         run: dotnet test src/TempooAnalytics.Gateway.Tests/TempooAnalytics.Gateway.Tests.csproj --no-build --configuration Release --verbosity minimal -- xunit.maxParallelThreads=2
 
+      # Normally ~4 minutes. A hung test host must fail fast (with a dump) instead of eating the whole job timeout.
       - name: API tests
-        run: dotnet test src/TempooAnalytics.Api.Tests/TempooAnalytics.Api.Tests.csproj --no-build --configuration Release --verbosity minimal -- xunit.maxParallelThreads=2
+        timeout-minutes: 15
+        run: dotnet test src/TempooAnalytics.Api.Tests/TempooAnalytics.Api.Tests.csproj --no-build --configuration Release --verbosity minimal --blame-hang-timeout 10m -- xunit.maxParallelThreads=2
 
   frontend:
     runs-on: ubuntu-latest
