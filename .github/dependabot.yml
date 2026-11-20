@@ -1,0 +1,65 @@
+# Version updates for the public repository. One grouped pull request per ecosystem (and per npm project) and week,
+# so the queue stays small. Security updates are handled separately by GitHub and are not limited by these settings.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /src/TempooAnalytics
+    schedule: { interval: weekly, day: monday }
+    open-pull-requests-limit: 3
+    groups:
+      angular-app:
+        patterns: ["*"]
+        update-types: [minor, patch]
+
+  - package-ecosystem: npm
+    directory: /tools/tempoo-analytics
+    schedule: { interval: weekly, day: monday }
+    open-pull-requests-limit: 3
+    groups:
+      tracker:
+        patterns: ["*"]
+        update-types: [minor, patch]
+
+  - package-ecosystem: npm
+    directory: /tools/tempoo-analytics/smoke
+    schedule: { interval: weekly, day: monday }
+    open-pull-requests-limit: 2
+    groups:
+      tracker-smoke:
+        patterns: ["*"]
+        update-types: [minor, patch]
+
+  - package-ecosystem: npm
+    directory: /tools/tempoocli
+    schedule: { interval: weekly, day: monday }
+    open-pull-requests-limit: 2
+    groups:
+      cli:
+        patterns: ["*"]
+        update-types: [minor, patch]
+
+  - package-ecosystem: nuget
+    directory: /
+    schedule: { interval: weekly, day: monday }
+    open-pull-requests-limit: 3
+    groups:
+      nuget:
+        patterns: ["*"]
+        update-types: [minor, patch]
+
+  - package-ecosystem: gomod
+    directory: /src/TempooAnalytics.Go
+    schedule: { interval: weekly, day: monday }
+    open-pull-requests-limit: 3
+    groups:
+      gomod:
+        patterns: ["*"]
+        update-types: [minor, patch]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule: { interval: weekly, day: monday }
+    open-pull-requests-limit: 3
+    groups:
+      github-actions:
+        patterns: ["*"]
