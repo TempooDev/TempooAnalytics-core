@@ -1,0 +1,348 @@
+<div class="max-w-4xl mx-auto px-6 py-8 text-slate-200">
+    <h1 class="text-4xl font-bold mb-8 text-white">Documentation & Help</h1>
+
+    <!-- Quick Start Section -->
+    <section class="mb-12">
+        <h2 class="text-2xl font-semibold mb-4 text-primary-400 border-b border-slate-800 pb-2">Getting Started</h2>
+        <p class="mb-4 text-slate-400">
+            Tempoo Analytics is a lightweight, privacy-focused analytics tool. To start tracking your website, include
+            our script in your HTML.
+        </p>
+        <div class="bg-slate-900 rounded-lg p-4 mb-4 border border-slate-800">
+            <pre class="overflow-x-auto text-sm"><code>&lt;script src="{{ scriptUrl }}" data-site="YOUR_SITE_KEY" data-key="YOUR_WRITE_KEY"{{ apiAttr }}&gt;&lt;/script&gt;</code></pre>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+            <div class="bg-slate-800/30 p-4 rounded-lg border border-slate-800">
+                <h3 class="font-bold text-white mb-2">Configuration Attributes</h3>
+                <ul class="text-sm space-y-2 text-slate-300">
+                    <li><code class="text-primary-300">data-site</code>: (Required) Your site's unique Key (slug).</li>
+                    <li><code class="text-primary-300">data-key</code>: (Required) Your authorized Write Key.</li>
+                    <li><code class="text-primary-300">data-debug</code>: Set to "true" to see console logs.</li>
+                    <li><code class="text-primary-300">data-honor-dnt</code>: Respect "Do Not Track" (default: true).
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </section>
+
+    <!-- Automatic Tracking -->
+    <section class="mb-12">
+        <h2 class="text-2xl font-semibold mb-4 text-primary-400 border-b border-slate-800 pb-2">Automatic Tracking</h2>
+        <p class="text-slate-400 mb-4">
+            By default, the script automatically tracks <strong>Pageviews</strong>. It handles Single Page Applications
+            (SPAs) by listening to route changes, so no manual configuration is needed for basic traffic analysis.
+        </p>
+    </section>
+
+    <!-- Custom Events -->
+    <section class="mb-12">
+        <h2 class="text-2xl font-semibold mb-4 text-primary-400 border-b border-slate-800 pb-2">Custom Events (Goals)
+        </h2>
+        <p class="text-slate-400 mb-4">
+            You can track specific user actions like button clicks, form submissions, or purchases using two methods.
+        </p>
+
+        <h3 class="text-xl font-medium mb-3 text-white">1. Declarative Method (No Code)</h3>
+        <p class="text-sm text-slate-400 mb-3">Add the <code
+                class="bg-slate-800 px-1 rounded text-primary-300">data-tempoo-goal</code> attribute to any HTML
+            element.</p>
+        <div class="bg-slate-900 rounded-lg p-4 mb-6 border border-slate-800">
+            <pre
+                class="text-sm"><code>&lt;button data-tempoo-goal="signup_clicked"&gt;Sign Up Now&lt;/button&gt;</code></pre>
+        </div>
+
+        <h3 class="text-xl font-medium mb-3 text-white">2. Programmatic Method (JavaScript)</h3>
+        <p class="text-sm text-slate-400 mb-3">Trigger events manually within your application logic using the global
+            <code class="bg-slate-800 px-1 rounded text-primary-300">window.tempoo</code> object.
+        </p>
+        <div class="bg-slate-900 rounded-lg p-4 mb-4 border border-slate-800">
+            <pre class="text-sm"><code>window.tempoo.track("purchase_completed", {{ '{' }} 
+  amount: 49.99, 
+  currency: "USD" 
+{{ '}' }});</code></pre>
+        </div>
+    </section>
+
+    <!-- Framework Integrations -->
+    <section class="mb-12">
+        <h2 class="text-2xl font-semibold mb-4 text-primary-400 border-b border-slate-800 pb-2">Framework Integrations
+        </h2>
+        <p class="text-slate-400 mb-6">
+            Learn how to integrate Tempoo Analytics with your favorite frameworks and platforms.
+        </p>
+
+        <details class="bg-slate-900/60 border border-slate-800 rounded-xl overflow-hidden cursor-pointer group">
+            <summary
+                class="p-4 font-medium text-slate-200 hover:bg-slate-800/50 transition-colors list-none flex items-center justify-between">
+                <span class="flex items-center gap-3">
+                    <span
+                        class="w-8 h-8 rounded-lg bg-red-500/10 text-red-400 flex items-center justify-center font-bold">S</span>
+                    Streamlit Integration guide
+                </span>
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                    class="text-slate-500 group-open:rotate-180 transition-transform">
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+            </summary>
+
+            <div class="p-6 border-t border-slate-800 space-y-8 text-sm">
+                <!-- Introduction -->
+                <div class="bg-primary-900/10 border-l-4 border-primary-500 p-4 mb-6">
+                    <p class="text-slate-300">
+                        Streamlit renders components (including custom HTML) inside iframes. Using a standard injection
+                        "traps" the script,
+                        preventing global tracking. This guide shows how to inject the script into the <strong>parent
+                            window's &lt;head&gt;</strong> for global availability.
+                    </p>
+                </div>
+
+                <!-- 1. The Injection Script -->
+                <div>
+                    <h3 class="text-lg font-semibold text-slate-100 mb-3">1. The Injection Script</h3>
+                    <p class="text-slate-400 mb-4">
+                        Copy this function into your code. It uses a JavaScript "bridge" to jump from the iframe to the
+                        parent document's head.
+                    </p>
+                    <div class="bg-slate-950 rounded-lg p-4 border border-slate-800">
+                        <pre class="text-xs text-sky-400"><code>import streamlit.components.v1 as components
+
+def inject_tempoo(site_id, write_key):
+    """
+    Injects the Tempoo script directly into the &lt;head&gt; of the parent document
+    to ensure global availability and persistence.
+    """
+    tempoo_script = f"""
+    &lt;script&gt;
+        // Check if it already exists to avoid duplicates on Streamlit re-runs
+        if (!window.parent.document.getElementById('tempoo-analytics')) {{ '{' }}
+            const script = window.parent.document.createElement('script');
+            script.id = 'tempoo-analytics';
+            script.src = "{{ scriptUrl }}";{{ apiScriptLine }}
+            script.setAttribute('data-site', '{{ '{' }}site_id{{ '}' }}');
+            script.setAttribute('data-key', '{{ '{' }}write_key{{ '}' }}');
+            script.defer = true;
+            window.parent.document.head.appendChild(script);
+        {{ '}' }}
+    &lt;/script&gt;
+    """
+    # The component is created with 0 height/width to be invisible
+    components.html(tempoo_script, height=0, width=0)
+
+# Call at the start of your app
+inject_tempoo("YOUR_SITE_ID", "YOUR_WRITE_KEY")</code></pre>
+                    </div>
+                </div>
+
+                <!-- 2. How it Works -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="bg-slate-800/20 p-4 rounded-lg border border-slate-800">
+                        <h4 class="font-bold text-primary-400 mb-2">window.parent</h4>
+                        <p class="text-xs text-slate-400">Accesses the main Streamlit window from within the component
+                            iframe.</p>
+                    </div>
+                    <div class="bg-slate-800/20 p-4 rounded-lg border border-slate-800">
+                        <h4 class="font-bold text-primary-400 mb-2">appendChild</h4>
+                        <p class="text-xs text-slate-400">Dynamically creates the script element and moves it to the
+                            parent head.</p>
+                    </div>
+                    <div class="bg-slate-800/20 p-4 rounded-lg border border-slate-800">
+                        <h4 class="font-bold text-primary-400 mb-2">Globality</h4>
+                        <p class="text-xs text-slate-400">The <code>tempoo</code> object becomes available session-wide
+                            for automatic SPA tracking.</p>
+                    </div>
+                </div>
+
+                <!-- 3. Tracking Events from Python -->
+                <div>
+                    <h3 class="text-lg font-semibold text-slate-100 mb-3">3. Tracking Events from Python</h3>
+                    <p class="text-slate-400 mb-4">
+                        Trigger custom events (like after an AI completion or a transaction) using this pattern:
+                    </p>
+                    <div class="bg-slate-950 rounded-lg p-4 border border-slate-800">
+                        <pre class="text-xs text-sky-400"><code>def track_event(event_name, params):
+    js_code = f"""
+    &lt;script&gt;
+        if (window.parent.tempoo) {{ '{' }}
+            window.parent.tempoo.track("{{ '{' }}event_name{{ '}' }}", {{ '{' }}params{{ '}' }});
+        {{ '}' }}
+    &lt;/script&gt;
+    """
+    components.html(js_code, height=0, width=0)
+
+if st.button("Simulate Purchase"):
+    track_event("purchase_completed", {{ '{' }}"amount": 50, "currency": "EUR"{{ '}' }})</code></pre>
+                    </div>
+                </div>
+
+                <!-- 4. Verification -->
+                <div class="bg-slate-800/30 p-4 rounded-lg border border-slate-700">
+                    <h3 class="text-lg font-semibold text-slate-100 mb-2">4. Verification</h3>
+                    <ol class="list-decimal list-inside text-slate-400 space-y-1">
+                        <li>Right-click your app -> <strong>Inspect</strong>.</li>
+                        <li>In the <strong>Elements</strong> tab, look for the <code>&lt;head&gt;</code> section.</li>
+                        <li>You should see <code>&lt;script id="tempoo-analytics" ...&gt;</code> directly under the main
+                            head.</li>
+                    </ol>
+                </div>
+            </div>
+        </details>
+
+        <details class="bg-slate-900/60 border border-slate-800 rounded-xl overflow-hidden cursor-pointer group mt-4">
+            <summary
+                class="p-4 font-medium text-slate-200 hover:bg-slate-800/50 transition-colors list-none flex items-center justify-between">
+                <span class="flex items-center gap-3">
+                    <span
+                        class="w-8 h-8 rounded-lg bg-purple-500/10 text-purple-400 flex items-center justify-center font-bold">B</span>
+                    Blazor Integration guide
+                </span>
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                    class="text-slate-500 group-open:rotate-180 transition-transform">
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+            </summary>
+
+            <div class="p-6 border-t border-slate-800 space-y-8 text-sm">
+                <!-- 1. Global Installation -->
+                <div>
+                    <h3 class="text-lg font-semibold text-slate-100 mb-3">1. Global Installation</h3>
+                    <p class="text-slate-400 mb-4">
+                        Add the script tag to your root file to make it available throughout the application.
+                    </p>
+                    <ul class="list-disc list-inside text-slate-400 mb-4 ml-2">
+                        <li><strong>Blazor WebAssembly:</strong> In <code>wwwroot/index.html</code>.</li>
+                        <li><strong>Blazor Server / Static SSR:</strong> In <code>App.razor</code> or
+                            <code>_Host.cshtml</code> (inside <code>&lt;head&gt;</code>).
+                        </li>
+                    </ul>
+                    <div class="bg-slate-950 rounded-lg p-4 border border-slate-800">
+                        <pre class="text-xs text-sky-400"><code>&lt;script src="{{ scriptUrl }}" data-site="YOUR_SITE_KEY" data-key="YOUR_WRITE_KEY"{{ apiAttr }}&gt;&lt;/script&gt;</code></pre>
+                    </div>
+                </div>
+
+                <!-- 2. Declarative Tracking -->
+                <div>
+                    <h3 class="text-lg font-semibold text-slate-100 mb-3">2. Declarative Tracking (No Code)</h3>
+                    <p class="text-slate-400 mb-4">
+                        Blazor handles custom attributes seamlessly. Add <code>data-tempoo-goal</code> to your
+                        components:
+                    </p>
+                    <div class="bg-slate-950 rounded-lg p-4 border border-slate-800">
+                        <pre class="text-xs text-sky-400"><code>&lt;button data-tempoo-goal="signup_clicked" class="btn btn-primary"&gt;
+    Sign Up
+&lt;/button&gt;
+
+&lt;button data-tempoo-goal="purchase" 
+        data-tempoo-goal-product="laptop" 
+        data-tempoo-goal-price="1200" 
+        class="btn btn-success"&gt;
+    Buy Now
+&lt;/button&gt;</code></pre>
+                    </div>
+                </div>
+
+                <!-- 3. Programmatic Tracking -->
+                <div>
+                    <h3 class="text-lg font-semibold text-slate-100 mb-3">3. Programmatic Tracking (JS Interop)</h3>
+                    <p class="text-slate-400 mb-4">
+                        Use <code>IJSRuntime</code> to trigger events from C# code.
+                    </p>
+                    <div class="bg-slate-950 rounded-lg p-4 border border-slate-800 mb-4">
+                        <p class="text-xs text-slate-500 mb-2">// Create a helper service</p>
+                        <pre class="text-xs text-sky-400"><code>public class TempooService
+{{ '{' }}
+    private readonly IJSRuntime _js;
+    public TempooService(IJSRuntime js) => _js = js;
+
+    public async ValueTask TrackEvent(string eventName, object metadata = null)
+    {{ '{' }}
+        await _js.InvokeVoidAsync("tempoo.track", eventName, metadata);
+    {{ '}' }}
+{{ '}' }}</code></pre>
+                    </div>
+                    <div class="bg-slate-950 rounded-lg p-4 border border-slate-800">
+                        <p class="text-xs text-slate-500 mb-2">// Use it in your component</p>
+                        <pre class="text-xs text-sky-400"><code>&#64;inject TempooService Tempoo
+
+&lt;button &#64;onclick="HandleLogin"&gt;Login&lt;/button&gt;
+
+&#64;code {{ '{' }}
+    async Task HandleLogin()
+    {{ '{' }}
+        // ... login logic ...
+        await Tempoo.TrackEvent("login_success", new {{ '{' }} method = "auth0" {{ '}' }});
+    {{ '}' }}
+{{ '}' }}</code></pre>
+                    </div>
+                </div>
+
+                <!-- 4. SPA Navigation -->
+                <div>
+                    <h3 class="text-lg font-semibold text-slate-100 mb-3">4. The SPA Challenge (Navigation)</h3>
+                    <p class="text-slate-400 mb-4">
+                        If the script doesn't automatically detect route changes, use <code>NavigationManager</code> to
+                        trigger pageviews manually:
+                    </p>
+                    <div class="bg-slate-950 rounded-lg p-4 border border-slate-800">
+                        <pre class="text-xs text-sky-400"><code>&#64;inject NavigationManager NavManager
+&#64;inject IJSRuntime JS
+
+&#64;code {{ '{' }}
+    protected override void OnInitialized()
+    {{ '{' }}
+        NavManager.LocationChanged += (s, e) => {{ '{' }}
+            JS.InvokeVoidAsync("tempoo.track", "pageview"); 
+        {{ '}' }};
+    {{ '}' }}
+{{ '}' }}</code></pre>
+                    </div>
+                    <p class="mt-4 text-xs text-slate-500 italic">
+                        <strong>Pro Tip:</strong> To avoid "window.tempoo is undefined" errors, ensure you call
+                        programmatic functions within <code>OnAfterRenderAsync(bool firstRender)</code> when
+                        <code>firstRender</code> is true.
+                    </p>
+                </div>
+            </div>
+        </details>
+    </section>
+
+    <!-- Funnels -->
+    <section class="mb-12">
+        <h2 class="text-2xl font-semibold mb-4 text-primary-400 border-b border-slate-800 pb-2">Conversion Funnels</h2>
+        <p class="text-slate-400 mb-4">
+            Funnels allow you to visualize the user journey and identify where people drop off. Every event you track
+            (Pageviews and Custom Events) can be used as a step in a Funnel.
+        </p>
+        <div class="bg-primary-900/20 border border-primary-500/30 p-4 rounded-lg">
+            <p class="text-sm italic text-primary-200">
+                <strong>Pro Tip:</strong> Create a funnel with steps like "Home Page" → "Registration Click" → "Signup
+                Success" to analyze your conversion rate accurately.
+            </p>
+        </div>
+    </section>
+
+    <!-- Privacy -->
+    <section class="mb-12">
+        <h2 class="text-2xl font-semibold mb-4 text-primary-400 border-b border-slate-800 pb-2">Privacy & Ethics</h2>
+        <ul class="list-disc list-inside space-y-2 text-slate-400">
+            <li><strong>100% GDPR Compliant</strong>: We do not store any personal identifiable information (PII).</li>
+            <li>No persistent cookies are used for tracking.</li>
+            <li>IP addresses are anonymized and never stored in full.</li>
+            <li><strong>Smart Analytics</strong>: We calculate essential metrics from raw events, including:
+                <ul class="list-disc list-inside ml-6 mt-1 space-y-1">
+                    <li>Device type and operating system.</li>
+                    <li>Bounce rates and session duration.</li>
+                    <li>Geographic location (country/region level).</li>
+                </ul>
+            </li>
+            <li>We respect <strong>Do Not Track (DNT)</strong> browser settings by default.</li>
+        </ul>
+    </section>
+
+    @if (supportEmail) {
+    <footer class="mt-16 pt-8 border-t border-slate-800 text-center text-slate-500 text-sm">
+        Need more help? Contact us at <a [href]="'mailto:' + supportEmail" class="text-sky-400 hover:underline">{{ supportEmail }}</a>
+    </footer>
+    }
+</div>

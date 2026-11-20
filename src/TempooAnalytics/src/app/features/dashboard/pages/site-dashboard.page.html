@@ -1,0 +1,796 @@
+<div class="min-h-screen bg-slate-950 text-slate-50 font-sans">
+    <main class="mx-auto max-w-[1400px] px-6 py-8 space-y-8">
+
+        <!-- Top Header & Selector -->
+        <header class="flex items-center justify-between bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-sm">
+            <div class="flex items-center gap-3">
+                <button (click)="toggleFilterBar()" [class.bg-slate-800]="showFilterBar()" title="Open filter settings"
+                    class="flex items-center gap-2 px-3 py-1.5 hover:bg-slate-800 rounded-lg transition-colors border border-transparent hover:border-slate-700 text-sm text-gray-300">
+                    <i class="pi pi-filter"></i>
+                    <span class="font-medium">Filter</span>
+                    @if (activeFilters().length > 0) {
+                    <span
+                        class="flex h-5 w-5 items-center justify-center rounded-full bg-sky-500 text-[10px] font-bold text-white">
+                        {{ activeFilters().length }}
+                    </span>
+                    }
+                </button>
+
+                <!-- Site Selector -->
+                <div class="flex items-center gap-2 px-3 py-1.5 bg-slate-800 rounded-lg border border-slate-700">
+                    <i class="pi pi-globe text-sky-400"></i>
+                    <select [ngModel]="selectedSiteKey()" (ngModelChange)="selectedSiteKey.set($event)" title="Select a site to view analytics"
+                        class="bg-transparent border-none text-sm font-semibold focus:outline-none min-w-[200px] cursor-pointer text-slate-200">
+                        <!-- Removed "All Sites" option as requested -->
+                        @for (site of sites(); track site.siteKey) {
+                        <option [value]="site.siteKey">{{ site.name }}</option>
+                        }
+                    </select>
+                </div>
+
+                <!-- Date Range Selector -->
+                <div class="flex items-center gap-1.5 p-1 bg-slate-800 rounded-xl border border-slate-700 shadow-sm">
+                    <div class="flex items-center gap-1 px-1">
+                        <button (click)="setRange(1)" [class]="selectedRange() === 1 ? 'bg-sky-500/10 text-sky-400 border-sky-500/20' : 'text-slate-500 hover:text-slate-300 border-transparent'" 
+                            class="px-2.5 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider border transition-all">24h</button>
+                        <button (click)="setRange(7)" [class]="selectedRange() === 7 ? 'bg-sky-500/10 text-sky-400 border-sky-500/20' : 'text-slate-500 hover:text-slate-300 border-transparent'"
+                            class="px-2.5 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider border transition-all">7d</button>
+                        <button (click)="setRange(30)" [class]="selectedRange() === 30 ? 'bg-sky-500/10 text-sky-400 border-sky-500/20' : 'text-slate-500 hover:text-slate-300 border-transparent'"
+                            class="px-2.5 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider border transition-all">30d</button>
+                    </div>
+
+                    <div class="h-4 w-px bg-slate-700 mx-0.5"></div>
+
+                    <div class="flex items-center gap-2 px-2 py-1 cursor-pointer hover:bg-slate-700/50 rounded-lg transition-colors group relative min-w-[200px]">
+                        <i class="pi pi-calendar text-xs text-slate-500 group-hover:text-sky-400"></i>
+                        <p-datepicker 
+                            #datepicker
+                            [ngModel]="dateRange()" 
+                            (ngModelChange)="onDateChange($event)"
+                            selectionMode="range" 
+                            [readonlyInput]="true" 
+                            [showTime]="true"
+                            [maxDate]="maxDateObj"
+                            [placeholder]="selectedRange() === 0 ? 'Custom Range' : 'Select Dates'"
+                            variant="filled"
+                            styleClass="tempoo-datepicker flex-1"
+                            inputStyleClass="bg-transparent border-none text-[10px] font-bold text-gray-200 focus:outline-none outline-none cursor-pointer py-1 w-full"
+                            appendTo="body"
+                            [showIcon]="false"
+                            [numberOfMonths]="1"
+                        ></p-datepicker>
+                        @if (selectedRange() === 0) {
+                            <i (click)="$event.stopPropagation(); setRange(30)" class="pi pi-times text-[10px] text-slate-500 hover:text-rose-400 ml-1"></i>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-4">
+                <div class="flex items-center gap-2">
+                    <span class="flex h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></span>
+                    <span class="text-xs font-medium text-emerald-500">{{ isPolling() ? 'Live' : 'Paused' }}</span>
+                </div>
+                <button (click)="showSetupGuide.set(true)" 
+                    class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold rounded-lg transition-all border border-slate-700 flex items-center gap-2">
+                    <i class="pi pi-code"></i>
+                    Setup
+                </button>
+                <button (click)="sharePublicLink()" [disabled]="loadingShare()"
+                    class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-bold rounded-lg transition-all shadow-lg shadow-indigo-500/20 border border-indigo-500/30 flex items-center gap-2">
+                    @if (loadingShare()) {
+                        <div class="animate-spin h-3 w-3 border-2 border-white border-t-transparent rounded-full"></div>
+                    }
+                    @if (!loadingShare()) {
+                        <i class="pi pi-share-alt"></i>
+                    }
+                    Share
+                </button>
+                <button title="Export Data (Coming Soon)"
+                    class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 disabled:opacity-70 text-slate-300 text-xs font-bold rounded-lg transition-all border border-slate-700 flex items-center gap-2 relative overflow-hidden cursor-not-allowed opacity-50">
+                        <i class="pi pi-download"></i>
+                        Export
+                        <i class="pi pi-lock absolute -top-1 -right-1 text-[8px] text-amber-500 bg-slate-900 rounded-full p-0.5"></i>
+                </button>
+                <button (click)="togglePolling()"
+                    title="{{ isPolling() ? 'Pause auto-refresh' : 'Resume auto-refresh' }}"
+                    class="p-2 hover:bg-slate-800 rounded-lg transition-colors border border-transparent hover:border-slate-700">
+                    <i [class]="isPolling() ? 'pi pi-pause' : 'pi pi-play'" class="text-gray-400"></i>
+                </button>
+                <button title="Settings (Coming Soon)"
+                    class="p-2 hover:bg-slate-800 rounded-lg transition-colors border border-transparent hover:border-slate-700 cursor-not-allowed opacity-50 relative group">
+                    <i class="pi pi-cog text-gray-400"></i>
+                    <i class="pi pi-lock absolute -top-1 -right-1 text-[8px] text-amber-500 bg-slate-900 rounded-full p-0.5"></i>
+                </button>
+                <!-- Removed 'Add site' button as requested -->
+            </div>
+        </header>
+
+        <!-- Setup Guide Modal -->
+        @if (showSetupGuide()) {
+        <app-setup-guide-modal
+            [siteId]="currentSite()?.siteKey || ''"
+            [writeKey]="currentSite()?.writeKey || ''"
+            (close)="showSetupGuide.set(false)">
+        </app-setup-guide-modal>        }
+
+        <!-- Filter Bar -->
+        @if (showFilterBar()) {
+        <div
+            class="mt-4 rounded-xl bg-[#1c1c1f] border border-[#27272a] p-4 shadow-2xl animate-in fade-in slide-in-from-top-2 duration-200 relative overflow-hidden">
+            
+            @if (!advancedAnalytics()) {
+                <ng-container *ngComponentOutlet="upsell; inputs: { kind: 'advanced-filters' }" />
+            }
+
+            <div class="flex flex-col gap-3" [class.opacity-20]="!advancedAnalytics()">
+                @for (filter of activeFilters(); track $index; let i = $index) {
+                <div class="flex flex-wrap items-center gap-2 p-2 rounded-lg bg-[#09090b]/50 border border-[#27272a]">
+                    <div class="flex items-center gap-2">
+                        <i class="pi pi-file text-gray-500 text-xs"></i>
+                        <select [ngModel]="filter.property" (ngModelChange)="updateFilterProperty(i, $event)"
+                            title="Select property"
+                            class="bg-transparent border-none text-xs text-gray-300 font-medium focus:outline-none cursor-pointer">
+                            @for (prop of availableProperties; track prop.value) {
+                            <option [value]="prop.value">{{ prop.label }}</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="h-4 w-px bg-[#27272a]"></div>
+
+                    <select [ngModel]="filter.operator" (ngModelChange)="updateFilterOperator(i, $event)"
+                        title="Select operator"
+                        class="bg-transparent border-none text-xs text-sky-400 font-bold focus:outline-none cursor-pointer">
+                        @for (op of availableOperators; track op.value) {
+                        <option [value]="op.value">{{ op.label }}</option>
+                        }
+                    </select>
+
+                    <div class="h-4 w-px bg-[#27272a]"></div>
+
+                    <div class="flex-1 flex flex-wrap items-center gap-1.5 min-w-[200px]">
+                        @for (tag of filter.values; track $index; let ti = $index) {
+                        <span
+                            class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-[#27272a] text-[10px] text-gray-300 border border-[#3f3f46]">
+                            {{ tag }}
+                            <i (click)="removeFilterTag(i, ti)"
+                                class="pi pi-times cursor-pointer hover:text-white text-[8px]"></i>
+                        </span>
+                        }
+                        <input [(ngModel)]="filter.newValue" (keydown.enter)="filter.newValue && updateFilterValue(i, filter.newValue)"
+                            (blur)="filter.newValue && updateFilterValue(i, filter.newValue)" placeholder="Type and press enter..."
+                            title="Add value"
+                            class="flex-1 bg-transparent border-none text-xs text-white placeholder-gray-600 focus:outline-none min-w-[60px]" />
+                    </div>
+
+                    <button (click)="removeFilter(i)" title="Remove filter"
+                        class="p-1.5 hover:bg-rose-500/10 text-gray-500 hover:text-rose-400 rounded transition-colors">
+                        <i class="pi pi-trash text-xs"></i>
+                    </button>
+                </div>
+                }
+
+                <div class="flex items-center justify-between mt-2 pt-3 border-t border-[#27272a]">
+                    <button (click)="addFilter()"
+                        class="flex items-center gap-2 px-3 py-1.5 hover:bg-[#27272a] rounded-lg text-xs font-semibold text-gray-400 hover:text-white transition-colors">
+                        <i class="pi pi-plus"></i>
+                        <span>Add Filter</span>
+                    </button>
+                    @if (activeFilters().length > 0) {
+                    <button (click)="clearAllFilters()"
+                        class="flex items-center gap-2 px-3 py-1.5 hover:bg-rose-500/10 rounded-lg text-xs font-semibold text-rose-400 hover:text-rose-300 transition-colors">
+                        <i class="pi pi-times-circle"></i>
+                        <span>Clear All</span>
+                    </button>
+                    }
+
+                    <div class="flex gap-2">
+                        <button (click)="toggleFilterBar()"
+                            class="px-4 py-1.5 rounded-lg text-xs font-semibold text-gray-500 hover:text-white transition-colors">
+                            Cancel
+                        </button>
+                        <button (click)="applyFilters()"
+                            class="px-4 py-1.5 bg-[#27272a] hover:bg-[#3f3f46] border border-[#3f3f46] rounded-lg text-xs font-bold text-white transition-all">
+                            Save Filters
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        }
+
+        @if (importedDataNote(); as note) {
+        <p class="flex items-center gap-2 text-xs text-slate-400 bg-indigo-500/5 border border-indigo-500/10 rounded-xl px-4 py-2">
+            <i class="pi pi-history text-indigo-400"></i>
+            {{ note }}
+        </p>
+        }
+
+        <!-- Blocks contributed by feature packages (DASHBOARD_EXTENSIONS), e.g. the AI weekly summary -->
+        @for (ext of extensions(); track ext.id) {
+        <ng-container *ngComponentOutlet="ext.component; inputs: { siteId: selectedSiteId() }" />
+        }
+
+        <!-- KPI Row -->
+        <section class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            <ta-metric-card label="Unique Users" [value]="metrics().visitors30"
+                [change]="getTrend(metrics().visitors30, previousMetrics().visitors30).value + '%'"
+                [positive]="getTrend(metrics().visitors30, previousMetrics().visitors30).positive"
+                changeLabel="vs prev"></ta-metric-card>
+
+            <ta-metric-card label="Sessions" [value]="metrics().sessions30"
+                [change]="getTrend(metrics().sessions30, previousMetrics().sessions30).value + '%'"
+                [positive]="getTrend(metrics().sessions30, previousMetrics().sessions30).positive"
+                changeLabel="vs prev"></ta-metric-card>
+
+            <ta-metric-card label="Pageviews" [value]="metrics().pageviews30"
+                [change]="getTrend(metrics().pageviews30, previousMetrics().pageviews30).value + '%'"
+                [positive]="getTrend(metrics().pageviews30, previousMetrics().pageviews30).positive"
+                changeLabel="vs prev"></ta-metric-card>
+
+            <ta-metric-card label="Pages / Session" [value]="((metrics().pagesPerSession30) | number:'1.1-1') || '0'"
+                [change]="getTrend(metrics().pagesPerSession30, previousMetrics().pagesPerSession30).value + '%'"
+                [positive]="getTrend(metrics().pagesPerSession30, previousMetrics().pagesPerSession30).positive"
+                changeLabel="vs prev"></ta-metric-card>
+
+            <ta-metric-card label="Bounce Rate" [value]="advancedAnalytics() ? (((metrics().bounceRate30) | number:'1.0-0') || '0') + '%' : 'Locked'"
+                [change]="advancedAnalytics() ? getTrend(metrics().bounceRate30, previousMetrics().bounceRate30).value + '%' : ''"
+                [positive]="advancedAnalytics() ? !getTrend(metrics().bounceRate30, previousMetrics().bounceRate30).positive : true"
+                changeLabel="vs prev">
+                @if (!advancedAnalytics()) {
+                    <i class="pi pi-lock text-[10px] text-amber-500 ml-1"></i>
+                }
+            </ta-metric-card>
+
+            <ta-metric-card label="Session Duration" [value]="advancedAnalytics() ? (formatDuration(metrics().avgSessionDuration30) || '0s') : 'Locked'"
+                [change]="advancedAnalytics() ? getTrend(metrics().avgSessionDuration30, previousMetrics().avgSessionDuration30).value + '%' : ''"
+                [positive]="advancedAnalytics() ? getTrend(metrics().avgSessionDuration30, previousMetrics().avgSessionDuration30).positive : true"
+                changeLabel="vs prev">
+                @if (!advancedAnalytics()) {
+                    <i class="pi pi-lock text-[10px] text-amber-500 ml-1"></i>
+                }
+            </ta-metric-card>
+        </section>
+
+        @if (showEmptyState()) {
+        <ta-empty-state 
+            title="We're waiting for your data" 
+            message="This site hasn't received any events yet. Integrate the tracker and start seeing results in real-time.">
+            <button (click)="showSetupGuide.set(true)" class="px-6 py-2.5 bg-sky-600 hover:bg-sky-500 text-white rounded-xl font-medium transition-all shadow-lg shadow-sky-600/20">
+                Setup Guide
+            </button>
+        </ta-empty-state>
+        }
+
+        <!-- Main Chart Section -->
+        <section class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-sm">
+            <div class="flex items-center justify-between mb-6">
+                <div class="flex items-center gap-3">
+                    <div class="p-2 bg-sky-500/10 rounded-lg">
+                        <i class="pi pi-chart-line text-sky-500"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-semibold text-slate-200">{{ selectedSiteKey() || 'Global' }} Evolution
+                        </h3>
+                        <p class="text-xs text-gray-400">{{ currentBreakdown() | titlecase }} visitors data</p>
+                    </div>
+                </div>
+                
+                <!-- Breakdown Selector -->
+                <ta-breakdown-selector [value]="currentBreakdown()" (valueChange)="selectedBreakdown.set($event)" />
+
+                <div
+                    class="px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs font-medium text-gray-400">
+                    <i class="pi pi-calendar mr-2"></i>
+                    {{ currentBreakdown() | titlecase }} Breakdown
+                </div>
+            </div>
+            <div class="h-[300px] w-full cursor-pointer">
+                <ta-traffic-chart [pageviews]="pageviewsData()" [visitors]="visitorsData()"
+                    [breakdown]="currentBreakdown()" [events]="eventsData()" (chartClick)="openEventsModal('__custom_only__')"></ta-traffic-chart>
+            </div>
+        </section>
+
+        <!-- Weekly Activity Heatmap -->
+        <section>
+            <app-hourly-activity [customData]="weeklyTrendsData()"></app-hourly-activity>
+        </section>
+
+        <!-- Secondary Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Referrers & UTM -->
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden relative group">
+                <div class="border-b border-slate-800 bg-slate-800/50 px-6 py-4 flex items-center justify-between">
+                    <div class="flex items-center gap-4">
+                        <button (click)="referrerTab.set('channels')" 
+                            [class]="referrerTab() === 'channels' ? 'text-slate-200 border-b-2 border-sky-500' : 'text-gray-500 hover:text-gray-300'"
+                            class="text-sm font-semibold pb-1 transition-colors">Channels</button>
+                        <button (click)="referrerTab.set('referrers')" 
+                            [class]="referrerTab() === 'referrers' ? 'text-slate-200 border-b-2 border-sky-500' : 'text-gray-500 hover:text-gray-300'"
+                            class="text-sm font-semibold pb-1 transition-colors">Top Referrers</button>
+                        
+                        @if (leads() && hasPlans) {
+                            <button class="text-sm font-semibold pb-1 text-gray-500 hover:text-gray-300 transition-colors">Leads</button>
+                        }
+                    </div>
+                    
+                    @if (!leads()) {
+                        <ng-container *ngComponentOutlet="upsell; inputs: { kind: 'leads-unlock' }" />
+                    }
+
+                    <div class="flex items-center gap-2">
+                        <button (click)="openReferrersModal()" class="text-xs text-sky-500 hover:text-sky-400 transition-colors font-medium">Details</button>
+                    </div>
+                </div>
+                <div class="p-6">
+                    <div class="space-y-4">
+                        @if (referrerTab() === 'referrers') {
+                            @for (item of referrersData(); track item.referrer) {
+                            <div class="flex items-center justify-between group">
+                                <div class="flex items-center gap-3 flex-1">
+                                    <span
+                                        class="w-2 h-2 rounded-full bg-sky-500/40 group-hover:bg-sky-500 transition-colors"></span>
+                                    <span class="text-sm text-gray-300 truncate max-w-[200px]">{{ item.referrer || 'Direct /
+                                        None' }}</span>
+                                </div>
+                                <div class="flex items-center gap-4">
+                                    <div class="w-32 h-1.5 bg-slate-950 rounded-full overflow-hidden">
+                                        <div class="h-full bg-sky-500 shadow-[0_0_8px_rgba(14,165,233,0.3)]"
+                                            [style.width.%]="(item.value / referrersData()[0].value) * 100"></div>
+                                    </div>
+                                    <span class="text-xs font-mono font-bold text-gray-400 w-12 text-right">{{ item.value |
+                                        number }}</span>
+                                </div>
+                            </div>
+                            }
+                            @if (referrersData().length === 0) {
+                            <div class="text-center py-8 text-gray-500 text-sm italic">No referrer data found</div>
+                            }
+                        } @else {
+                            @for (item of channelsData(); track item.channel) {
+                            <div class="flex items-center justify-between group">
+                                <div class="flex items-center gap-3 flex-1">
+                                    <i [class]="getChannelIcon(item.channel)" class="text-gray-500 group-hover:text-sky-400 transition-colors text-xs w-4"></i>
+                                    <span class="text-sm text-gray-300">{{ item.channel }}</span>
+                                </div>
+                                <div class="flex items-center gap-4">
+                                    <div class="w-32 h-1.5 bg-slate-950 rounded-full overflow-hidden">
+                                        <div class="h-full bg-sky-500 shadow-[0_0_8px_rgba(14,165,233,0.3)]"
+                                            [style.width.%]="(item.value / channelsData()[0].value) * 100"></div>
+                                    </div>
+                                    <span class="text-xs font-mono font-bold text-gray-400 w-12 text-right">{{ item.value |
+                                        number }}</span>
+                                </div>
+                            </div>
+                            }
+                            @if (channelsData().length === 0) {
+                            <div class="text-center py-8 text-gray-500 text-sm italic">No channel data found</div>
+                            }
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <!-- Top Pages -->
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
+                <div class="border-b border-slate-800 bg-slate-800/50 px-6 py-4 flex items-center justify-between">
+                    <div class="flex items-center gap-4 overflow-x-auto no-scrollbar">
+                        <button (click)="pagesTab.set('pages')" 
+                            [class]="pagesTab() === 'pages' ? 'text-slate-200 border-b-2 border-sky-500' : 'text-gray-500 hover:text-gray-300'"
+                            class="text-xs font-semibold pb-1 transition-colors whitespace-nowrap">Pages</button>
+                        <button (click)="pagesTab.set('titles')" 
+                            [class]="pagesTab() === 'titles' ? 'text-slate-200 border-b-2 border-sky-500' : 'text-gray-500 hover:text-gray-300'"
+                            class="text-xs font-semibold pb-1 transition-colors whitespace-nowrap">Titles</button>
+                        <button (click)="pagesTab.set('entry')" 
+                            [class]="pagesTab() === 'entry' ? 'text-slate-200 border-b-2 border-sky-500' : 'text-gray-500 hover:text-gray-300'"
+                            class="text-xs font-semibold pb-1 transition-colors whitespace-nowrap">Entry</button>
+                        <button (click)="pagesTab.set('exit')" 
+                            [class]="pagesTab() === 'exit' ? 'text-slate-200 border-b-2 border-sky-500' : 'text-gray-500 hover:text-gray-300'"
+                            class="text-xs font-semibold pb-1 transition-colors whitespace-nowrap">Exit</button>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button (click)="openPagesModal()" class="text-xs text-sky-500 hover:text-sky-400 transition-colors font-medium">Details</button>
+                    </div>
+                </div>
+                <div class="p-6">
+                    <div class="space-y-4">
+                        @let currentPages = pagesTab() === 'pages' ? topPagesData() : (pagesTab() === 'titles' ? pageTitlesData() : (pagesTab() === 'entry' ? entryPagesData() : exitPagesData()));
+                        @for (item of currentPages; track item.url) {
+                        <div class="flex items-center justify-between group">
+                            <div class="flex items-center gap-3 flex-1">
+                                <span class="text-xs font-medium text-gray-500 w-4">#{{ $index + 1 }}</span>
+                                <span class="text-sm text-gray-300 truncate max-w-[200px]" [title]="item.url">{{ item.url }}</span>
+                            </div>
+                            <div class="flex items-center gap-4">
+                                <span
+                                    class="text-xs font-semibold px-2 py-0.5 bg-emerald-500/10 text-emerald-400 rounded border border-emerald-500/20">
+                                    {{ item.views | number }} {{ pagesTab() === 'pages' || pagesTab() === 'titles' ? 'views' : 'sessions' }}
+                                </span>
+                            </div>
+                        </div>
+                        }
+                        @if (currentPages.length === 0) {
+                        <div class="text-center py-8 text-gray-500 text-sm italic">No data found</div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tech & Demographics -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <!-- Locations -->
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 md:col-span-2">
+                <h3 class="text-sm font-semibold mb-6 text-slate-200">World Visitors</h3>
+                <div class="h-80">
+                    <ta-top-locations [mapData]="locationData()" [table]="locationsTable()" class="h-full block" />
+                </div>
+            </div>
+
+            <!-- Devices/Browsers -->
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
+                <div class="border-b border-slate-800 bg-slate-800/50 px-6 py-4 flex items-center justify-between">
+                    <div class="flex items-center gap-4 overflow-x-auto no-scrollbar">
+                        <button (click)="techTab.set('devices')" 
+                            [class]="techTab() === 'devices' ? 'text-slate-200 border-b-2 border-sky-500' : 'text-gray-500 hover:text-gray-300'"
+                            class="text-xs font-semibold pb-1 transition-colors whitespace-nowrap">Devices</button>
+                        <button (click)="techTab.set('browsers')" 
+                            [class]="techTab() === 'browsers' ? 'text-slate-200 border-b-2 border-sky-500' : 'text-gray-500 hover:text-gray-300'"
+                            class="text-xs font-semibold pb-1 transition-colors whitespace-nowrap">Browsers</button>
+                        <button (click)="techTab.set('os')" 
+                            [class]="techTab() === 'os' ? 'text-slate-200 border-b-2 border-sky-500' : 'text-gray-500 hover:text-gray-300'"
+                            class="text-xs font-semibold pb-1 transition-colors whitespace-nowrap">OS</button>
+                        <button (click)="techTab.set('screens')" 
+                            [class]="techTab() === 'screens' ? 'text-slate-200 border-b-2 border-sky-500' : 'text-gray-500 hover:text-gray-300'"
+                            class="text-xs font-semibold pb-1 transition-colors whitespace-nowrap">Screens</button>
+                    </div>
+                </div>
+                <div class="p-6">
+                    @if (techTab() === 'devices') {
+                        <ta-top-devices [devices]="devicesData()" />
+                    } @else if (techTab() === 'browsers') {
+                        <div class="space-y-4">
+                            @for (item of browsersData(); track item.browser) {
+                                <div class="flex items-center justify-between group">
+                                    <div class="flex items-center gap-3 flex-1">
+                                        <i [class]="getTechIcon('browser', item.browser)" class="text-gray-500 group-hover:text-sky-400 transition-colors text-xs w-4"></i>
+                                        <span class="text-sm text-gray-300">{{ item.browser }}</span>
+                                    </div>
+                                    <div class="flex items-center gap-4">
+                                        <div class="w-24 h-1 bg-slate-950 rounded-full overflow-hidden">
+                                            <div class="h-full bg-sky-500" [style.width.%]="(item.value / (browsersData()[0]?.value || 1)) * 100"></div>
+                                        </div>
+                                        <span class="text-xs font-mono font-bold text-gray-400 w-10 text-right">{{ item.value | number }}</span>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    } @else if (techTab() === 'os') {
+                        <div class="space-y-4">
+                            @for (item of osData(); track item.os) {
+                                <div class="flex items-center justify-between group">
+                                    <div class="flex items-center gap-3 flex-1">
+                                        <i [class]="getTechIcon('os', item.os)" class="text-gray-500 group-hover:text-sky-400 transition-colors text-xs w-4"></i>
+                                        <span class="text-sm text-gray-300">{{ item.os }}</span>
+                                    </div>
+                                    <div class="flex items-center gap-4">
+                                        <div class="w-24 h-1 bg-slate-950 rounded-full overflow-hidden">
+                                            <div class="h-full bg-sky-500" [style.width.%]="(item.value / (osData()[0]?.value || 1)) * 100"></div>
+                                        </div>
+                                        <span class="text-xs font-mono font-bold text-gray-400 w-10 text-right">{{ item.value | number }}</span>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    } @else if (techTab() === 'screens') {
+                        <div class="space-y-4">
+                            @for (item of screensData(); track item.resolution) {
+                                <div class="flex items-center justify-between group">
+                                    <div class="flex items-center gap-3 flex-1">
+                                        <i class="pi pi-desktop text-gray-500 group-hover:text-sky-400 transition-colors text-xs w-4"></i>
+                                        <span class="text-sm text-gray-300">{{ item.resolution }}</span>
+                                    </div>
+                                    <div class="flex items-center gap-4">
+                                        <div class="w-24 h-1 bg-slate-950 rounded-full overflow-hidden">
+                                            <div class="h-full bg-sky-500" [style.width.%]="(item.value / (screensData()[0]?.value || 1)) * 100"></div>
+                                        </div>
+                                        <span class="text-xs font-mono font-bold text-gray-400 w-10 text-right">{{ item.value | number }}</span>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Row: Technical, Customs & Funnels -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+           <!-- Technical Analysis (VPN, Bots, etc) -->
+           <div class="lg:col-span-1 bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
+               <div class="px-6 py-4 border-b border-slate-800 bg-slate-800/50 flex items-center gap-2">
+                   <i class="pi pi-shield text-orange-400"></i>
+                   <h3 class="text-sm font-semibold text-slate-200">Traffic Quality</h3>
+               </div>
+               <div class="p-6">
+                   <div class="grid grid-cols-1 gap-4">
+                       @for (traffic of technicalTrafficData(); track traffic.type) {
+                       <div
+                           class="p-4 bg-slate-950 rounded-xl border border-slate-800 flex items-center justify-between">
+                           <div>
+                               <p class="text-[10px] uppercase tracking-wider text-gray-500 font-bold mb-1">{{
+                                   traffic.type }}</p>
+                               <p class="text-xl font-bold text-slate-200">{{ traffic.count | number }}</p>
+                           </div>
+                           <div class="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center">
+                               <i
+                                   [class]="traffic.type === 'Human' ? 'pi pi-user text-emerald-500' : (traffic.type === 'Crawler' ? 'pi pi-search text-orange-500' : 'pi pi-android text-sky-400')"></i>
+                           </div>
+                       </div>
+                       }
+                       @if (technicalTrafficData().length === 0) {
+                       <div class="text-center py-8 text-gray-500 text-sm italic">No technical activity found</div>
+                       }
+                   </div>
+
+                   <!-- AI & Bot Detailed Breakdown -->
+                   @if (botTrafficData().length > 0) {
+                   <div class="mt-8">
+                       <h4 class="text-[10px] uppercase tracking-wider text-gray-500 font-bold mb-4">AI & Crawler Identities</h4>
+                       <div class="space-y-3">
+                           @for (bot of botTrafficData(); track bot.name) {
+                           <div class="flex items-center justify-between group">
+                               <div class="flex items-center gap-3 min-w-0">
+                                   <div class="w-8 h-8 rounded-lg bg-sky-500/10 flex items-center justify-center border border-sky-500/20">
+                                       <i class="pi pi-android text-sky-400 text-xs"></i>
+                                   </div>
+                                   <span class="text-sm text-slate-300 font-medium truncate">{{ bot.name }}</span>
+                               </div>
+                               <span class="text-xs font-bold text-slate-500 group-hover:text-slate-200 transition-colors">{{ bot.count | number }}</span>
+                           </div>
+                           }
+                       </div>
+                   </div>
+                   }
+               </div>
+           </div>
+
+           <!-- Identified Companies (B2B) -->
+           <div class="lg:col-span-1 bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden relative group">
+               <div class="px-6 py-4 border-b border-slate-800 bg-slate-800/50 flex items-center gap-2">
+                   <i class="pi pi-building text-sky-400"></i>
+                   <h3 class="text-sm font-semibold text-slate-200">Company Identification</h3>
+               </div>
+
+               @if (!advancedAnalytics()) {
+                   <ng-container *ngComponentOutlet="upsell; inputs: { kind: 'lead-enrichment' }" />
+               }
+
+               <div class="p-6">
+                   <div class="space-y-4">
+                       @for (company of companiesData(); track company.name) {
+                       <div class="p-4 bg-slate-950 rounded-xl border border-slate-800 flex items-center justify-between hover:border-sky-500/30 transition-colors group">
+                           <div class="flex items-center gap-3">
+                               <div class="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center border border-slate-700">
+                                   <i class="pi pi-building text-slate-400"></i>
+                               </div>
+                               <div>
+                                   <p class="text-sm font-bold text-slate-200">{{ company.name }}</p>
+                                   <p class="text-[10px] text-slate-500 font-medium">{{ company.domain }}</p>
+                               </div>
+                           </div>
+                           <div class="text-right">
+                               <p class="text-xs font-bold text-slate-400">{{ company.count }} events</p>
+                           </div>
+                       </div>
+                       }
+
+                       @if (companiesData().length === 0) {
+                       <div class="flex flex-col items-center justify-center py-12 text-center">
+                           <div class="w-12 h-12 rounded-full bg-slate-800/50 flex items-center justify-center mb-3">
+                               <i class="pi pi-search text-slate-600"></i>
+                           </div>
+                           <p class="text-sm text-slate-500 italic">No companies identified yet</p>
+                       </div>
+                       }
+                   </div>
+               </div>
+           </div>
+
+           <!-- Custom Events (Dynamic) -->
+           <div class="lg:col-span-1 bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden relative group">                <div class="px-6 py-4 border-b border-slate-800 bg-slate-800/50 flex items-center gap-2">
+                    <i class="pi pi-bolt text-yellow-400"></i>
+                    <h3 class="text-sm font-semibold text-slate-200">Custom Events Distribution</h3>
+                </div>
+                
+                @if (!advancedAnalytics()) {
+                    <ng-container *ngComponentOutlet="upsell; inputs: { kind: 'custom-events' }" />
+                }
+
+                <div class="p-6" [class.opacity-20]="!advancedAnalytics()">
+                    <div class="space-y-3">
+                        @for (event of customEventsData(); track event.eventName) {
+                        <div (click)="openEventsModal(event.eventName)" class="p-3 bg-slate-950 rounded-xl border border-slate-800 flex items-center justify-between group hover:border-yellow-500/30 transition-all cursor-pointer">
+                            <div>
+                                <p class="text-[10px] uppercase tracking-wider text-gray-500 font-bold mb-0.5">{{ event.eventName }}</p>
+                                <p class="text-lg font-bold text-slate-200">{{ event.count | number }}</p>
+                            </div>
+                            <div class="w-8 h-8 rounded-full bg-yellow-500/5 flex items-center justify-center group-hover:bg-yellow-500/10 transition-colors">
+                                <i class="pi pi-tag text-yellow-500/50 group-hover:text-yellow-500 text-xs"></i>
+                            </div>
+                        </div>
+                        }
+                        @if (customEventsData().length === 0) {
+                        <div class="text-center py-8 text-gray-500 text-sm italic">No custom events tracked</div>
+                        }
+                    </div>
+                    <div class="mt-4 flex flex-col items-center justify-center border-t border-slate-800 pt-4 gap-2">
+                        <button (click)="openEventsModal('__custom_only__')" class="text-[10px] font-bold text-sky-500 hover:text-sky-400 uppercase tracking-widest transition-colors">
+                            View All Events
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Funnels Section -->
+            <div class="lg:col-span-1 bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden relative">
+                <div class="px-6 py-4 border-b border-slate-800 bg-slate-800/50 flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <i class="pi pi-filter-fill text-sky-400"></i>
+                        <h3 class="text-sm font-semibold text-slate-200">Conversion Funnels</h3>
+                    </div>
+                    @if (advancedAnalytics()) {
+                        <button (click)="openNewFunnelModal()" class="p-1.5 hover:bg-sky-500/10 text-sky-500 rounded-lg transition-colors" title="Create Funnel">
+                            <i class="pi pi-plus text-xs"></i>
+                        </button>
+                    }
+                </div>
+
+                @if (!advancedAnalytics()) {
+                    <ng-container *ngComponentOutlet="upsell; inputs: { kind: 'funnels' }" />
+                }
+
+                <div class="p-6" [class.opacity-20]="!advancedAnalytics()">
+                    <div class="space-y-4">
+                        @for (funnel of funnelsData(); track funnel.id) {
+                        <div (click)="editFunnel(funnel)" class="p-4 bg-slate-950 rounded-xl border border-slate-800 hover:border-sky-500/30 transition-all cursor-pointer group">
+                            <div class="flex items-center justify-between mb-3">
+                                <div>
+                                    <h4 class="text-sm font-bold text-slate-200">{{ funnel.name }}</h4>
+                                    <p class="text-[10px] text-gray-500">{{ funnel.totalSessions | number }} sessions analyzed</p>
+                                </div>
+                                <div class="text-right">
+                                    <span class="block text-lg font-black text-sky-400">{{ funnel.conversionRate | number:'1.1-1' }}%</span>
+                                    <span class="text-[8px] uppercase font-bold text-gray-600">conversion</span>
+                                </div>
+                            </div>
+                            <div class="flex gap-1 h-1.5 w-full rounded-full overflow-hidden bg-slate-900">
+                                @for (step of funnel.steps; track $index) {
+                                <div class="h-full bg-sky-500/40 group-hover:bg-sky-500 transition-colors" 
+                                     [style.width.%]="100 / funnel.steps.length"></div>
+                                }
+                            </div>
+                        </div>
+                        }
+
+                        @if (funnelsData().length === 0) {
+                        <div class="flex flex-col items-center justify-center py-10 text-center space-y-4">
+                            <div class="w-12 h-12 rounded-full bg-slate-800 flex items-center justify-center">
+                                <i class="pi pi-filter text-gray-500"></i>
+                            </div>
+                            <div>
+                                <p class="text-sm font-medium text-gray-400">No funnels configured</p>
+                                <p class="text-[10px] text-gray-500 px-4">Create your first funnel to track user conversion paths</p>
+                            </div>
+                            <button (click)="openNewFunnelModal()" class="px-4 py-2 bg-sky-600 hover:bg-sky-500 text-white rounded-lg text-xs font-bold transition-colors">
+                                Create Funnel
+                            </button>
+                        </div>
+                        }
+                    </div>
+                </div>
+            </div>
+                    </div>
+
+        <!-- Heatmaps (FeatureFlags:Heatmaps) -->
+        @if (heatmapsEnabled()) {
+        <ta-heatmap-panel class="block" [siteId]="selectedSiteId()" [locked]="!advancedAnalytics()" />
+        }
+            
+                </main>
+            
+                    <!-- Funnel Builder Modal -->
+                    @if (showFunnelModal()) {
+                    <div (click)="closeFunnelModal()" class="fixed inset-0 z-100 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+                        <div (click)="$event.stopPropagation()" class="w-full max-w-2xl bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl max-h-[90vh] overflow-y-auto">
+                            <div class="sticky top-0 bg-slate-900/80 backdrop-blur-md px-6 py-4 border-b border-slate-800 flex items-center justify-between z-10">
+                                <h3 class="font-bold text-slate-100 flex items-center gap-2">
+                                    <i class="pi pi-plus-circle text-sky-400"></i>
+                                    {{ funnelToEdit() ? 'Edit' : 'Configure New' }} Funnel
+                                </h3>
+                                <div class="flex items-center gap-2">
+                                    @if (funnelToEdit()?.id) {
+                                    <button (click)="deleteFunnel()" [disabled]="deletingFunnel()" class="text-xs font-bold text-rose-400 hover:text-rose-300 px-3 py-1.5 hover:bg-rose-500/10 rounded-lg transition-colors border border-rose-500/20 flex items-center gap-1.5 disabled:opacity-50" title="Delete Funnel">
+                                        <i class="pi pi-trash"></i> Delete
+                                    </button>
+                                    }
+                                    <button (click)="closeFunnelModal()" class="text-xs font-bold text-rose-400 hover:text-rose-300 px-3 py-1.5 hover:bg-rose-500/10 rounded-lg transition-colors border border-rose-500/20">
+                                        Cancel
+                                    </button>
+                                    <button (click)="closeFunnelModal()" class="text-gray-500 hover:text-white p-2">
+                                        <i class="pi pi-times"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="p-6">
+                                <app-funnel-builder [siteId]="selectedSiteId()" [initialDefinition]="funnelToEdit()" (calculateResult)="onFunnelSaved()" />
+                            </div>
+                        </div>
+                    </div>
+                    }
+                
+                    <!-- Referrers Details Modal -->
+                    @if (showReferrersModal()) {
+                        <app-referrers-modal 
+                            [siteKey]="selectedSiteKey()" 
+                            [days]="selectedRange()" 
+                            [from]="customFrom()"
+                            [to]="customTo()"
+                            [filters]="activeFilters()"
+                            [initialViewMode]="referrerTab()"
+                            (close)="closeReferrersModal()" />
+                    }
+
+                    <!-- Pages Details Modal -->
+                    @if (showPagesModal()) {
+                        <app-pages-modal 
+                            [siteKey]="selectedSiteKey()" 
+                            [days]="selectedRange()" 
+                            [from]="customFrom()"
+                            [to]="customTo()"
+                            [filters]="activeFilters()"
+                            [initialViewMode]="pagesTab()"
+                            (close)="closePagesModal()" />
+                    }
+
+                    <!-- Public Link Success Modal -->
+                    @if (publicLink()) {
+                    <div class="fixed inset-0 flex items-center justify-center z-101 bg-slate-950/80 backdrop-blur-md p-4 animate-in fade-in duration-300">
+                        <div class="p-8 rounded-2xl shadow-2xl w-full max-w-lg bg-slate-900 border border-indigo-500/30">
+                            <div class="flex items-center gap-3 mb-4">
+                                <div class="p-3 rounded-full bg-indigo-500/10 text-indigo-400">
+                                    <i class="pi pi-link text-xl"></i>
+                                </div>
+                                <h3 class="text-xl font-bold text-white tracking-tight">Public Preview Ready!</h3>
+                            </div>
+                            <p class="text-sm text-slate-300 mb-6">Anyone with this link can view the metrics for this site in real-time. We've copied it to your clipboard.</p>
+                            
+                            <div class="relative group">
+                                <input class="w-full bg-slate-950 border border-slate-800 text-indigo-300 text-sm font-mono px-4 py-3 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none" readonly [value]="publicLink()" />
+                                <div class="absolute inset-y-0 right-3 flex items-center">
+                                    <span class="text-[10px] font-bold text-indigo-500/50 uppercase tracking-widest">Read Only</span>
+                                </div>
+                            </div>
+
+                            <div class="mt-8 flex justify-end gap-3">
+                                <button class="px-6 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl transition-all" (click)="copyPublicLink()">Copy Again & Close</button>
+                                <button class="px-6 py-2 bg-slate-800 hover:bg-slate-700 text-slate-400 text-xs font-bold rounded-xl transition-all" (click)="publicLink.set(null)">Close</button>
+                            </div>
+                        </div>
+                    </div>
+                    }
+
+                    <!-- Events Details Modal -->
+                    @if (showEventsModal()) {
+                        <app-events-modal
+                            [siteKey]="selectedSiteKey()"
+                            [days]="selectedRange()"
+                            [customFrom]="customFrom()"
+                            [customTo]="customTo()"
+                            [filters]="{ advancedFilters: activeFilters() }"
+                            [initialEventName]="eventModalFilter()"
+                            (close)="closeEventsModal()" />
+                    }
+            </div>
+            

@@ -1,0 +1,207 @@
+# Self-host stack of Tempoo Analytics Community: the core only.
+#   gateway -> api (community) / ingestion / web, backed by PostgreSQL, ClickHouse and Redis; importer runs the import/export jobs.
+# No payments, public API or cloud API. Setup: copy .env.example to .env, fill it in, then `docker compose up -d --build`.
+# Guide: docs/self-hosting.md
+name: tempoo
+
+x-restart: &restart
+  restart: unless-stopped
+
+services:
+  postgres:
+    <<: *restart
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-tempoo}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-tempoo}
+    volumes:
+      - postgres-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  clickhouse:
+    <<: *restart
+    image: clickhouse/clickhouse-server:25.8
+    environment:
+      # The image creates this user (full access to its database) and runs the init scripts as it.
+      CLICKHOUSE_USER: api_worker
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:?Set CLICKHOUSE_PASSWORD in .env}
+      CLICKHOUSE_DB: tempoo_analytics
+    ulimits:
+      nofile: { soft: 262144, hard: 262144 }
+    volumes:
+      - clickhouse-data:/var/lib/clickhouse
+      # Database and tables on the first start (the API also applies pending scripts at startup).
+      - ./deploy/clickhouse/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      # Through the container IP, not localhost: during the first start the image runs a temporary server on localhost only.
+      test: ["CMD-SHELL", "clickhouse-client --host \"$$(hostname -i | cut -d' ' -f1)\" --user api_worker --password \"$$CLICKHOUSE_PASSWORD\" --query 'SELECT 1' || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  redis:
+    <<: *restart
+    image: redis:7-alpine
+    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD:?Set REDIS_PASSWORD in .env}", "--appendonly", "yes"]
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli --no-auth-warning -a \"$$REDIS_PASSWORD\" ping | grep -q PONG"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  api:
+    <<: *restart
+    build:
+      context: .
+      dockerfile: src/TempooAnalytics.Api/Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_HTTP_PORTS: "8080"
+      # Community edition: the core alone, no module is loaded.
+      Modules__Enabled: "false"
+      ConnectionStrings__analytics-db: Host=postgres;Port=5432;Database=${POSTGRES_DB:-tempoo};Username=${POSTGRES_USER:-tempoo};Password=${POSTGRES_PASSWORD}
+      ConnectionStrings__redis: redis:6379,password=${REDIS_PASSWORD}
+      ConnectionStrings__clickhouse: Host=clickhouse;Port=8123;Username=api_worker;Password=${CLICKHOUSE_PASSWORD};Database=tempoo_analytics;SocketTimeout=60000;MaxPoolSize=100
+      # First administrator, created only when the users table is empty. Empty ADMIN_PASSWORD = a random one, printed once in the API log.
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+      # Signing key of the sessions. Empty = generated once and kept in the /app/Data volume.
+      Auth__JwtKey: ${AUTH_JWTKEY:-}
+      Management__ApiKey: ${MANAGEMENT_APIKEY:-}
+      # Unlocks the /admin/users console.
+      Management__MasterPassword: ${ADMIN_MASTER_PASSWORD:?Set ADMIN_MASTER_PASSWORD in .env}
+      MAXMIND_ACCOUNT_ID: ${MAXMIND_ACCOUNT_ID:-}
+      MAXMIND_LICENSE_KEY: ${MAXMIND_LICENSE_KEY:-}
+      # Optional email through Resend: without both, nothing is sent and api.resend.com is never called.
+      Resend__ApiKey: ${RESEND_APIKEY:-}
+      Resend__FromEmail: ${RESEND_FROMEMAIL:-}
+      # Address your users open (your TLS proxy in front of the gateway): links and the logo of emails point here. Empty = http://localhost:8000.
+      App__PublicUrl: ${PUBLIC_URL:-}
+      # Optional S3-compatible bucket for Plausible/GA4 import and CSV export (docs/selfhost-s3-storage.md). Without it those
+      # features answer "not available on this server" and the app hides them; everything else works.
+      Storage__R2__Endpoint: ${STORAGE_R2_ENDPOINT:-}
+      Storage__R2__AccessKey: ${STORAGE_R2_ACCESS_KEY:-}
+      Storage__R2__SecretKey: ${STORAGE_R2_SECRET_KEY:-}
+      Storage__R2__BucketName: ${STORAGE_R2_BUCKET:-tempoo-exports}
+    volumes:
+      - api-data:/app/Data
+    depends_on:
+      postgres: { condition: service_healthy }
+      clickhouse: { condition: service_healthy }
+      redis: { condition: service_healthy }
+
+  ingestion:
+    <<: *restart
+    build:
+      context: src/TempooAnalytics.Go
+      dockerfile: Dockerfile
+      args:
+        SERVICE_NAME: ingestion
+    environment:
+      PORT: "8081"
+      CLICKHOUSE_ADDR: clickhouse:9000
+      CLICKHOUSE_USER: api_worker
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD}
+      CLICKHOUSE_DB: tempoo_analytics
+      REDIS_ADDR: redis:6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      POSTGRES_CONN_STRING: postgres://${POSTGRES_USER:-tempoo}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-tempoo}
+      # Community has no plans: no 15-day trial, no monthly event quota.
+      DISABLE_PLAN_LIMITS: "true"
+      # Budget of each dependency call (site config, quota, dedup) before a 503 or skipping the check. Empty = 500ms.
+      INGEST_DEPENDENCY_TIMEOUT: ${INGEST_DEPENDENCY_TIMEOUT:-500ms}
+      GEOIP_CITY_DB_PATH: Data/GeoLite2-Country.mmdb
+      GEOIP_ASN_DB_PATH: Data/GeoLite2-ASN.mmdb
+      MAXMIND_ACCOUNT_ID: ${MAXMIND_ACCOUNT_ID:-}
+      MAXMIND_LICENSE_KEY: ${MAXMIND_LICENSE_KEY:-}
+      ENABLE_OTEL: "false"
+    volumes:
+      - ingestion-geoip:/app/Data
+      # Batches ClickHouse did not accept, replayed when it is back.
+      - ingestion-spill:/app/spill
+    depends_on:
+      postgres: { condition: service_healthy }
+      clickhouse: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      api: { condition: service_started }
+
+  # Worker of the import (Plausible, GA4) and CSV export jobs the API queues. It reads and writes the same bucket as the API; without
+  # one the API never queues a job (it answers 501), so the worker just waits.
+  importer:
+    <<: *restart
+    build:
+      context: src/TempooAnalytics.Go
+      dockerfile: Dockerfile
+      args:
+        SERVICE_NAME: importer
+    environment:
+      PORT: "8084"
+      CLICKHOUSE_ADDR: clickhouse:9000
+      CLICKHOUSE_USER: api_worker
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD}
+      CLICKHOUSE_DB: tempoo_analytics
+      REDIS_ADDR: redis:6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      POSTGRES_CONN_STRING: postgres://${POSTGRES_USER:-tempoo}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-tempoo}
+      STORAGE_R2_ENDPOINT: ${STORAGE_R2_ENDPOINT:-}
+      STORAGE_R2_ACCESS_KEY: ${STORAGE_R2_ACCESS_KEY:-}
+      STORAGE_R2_SECRET_KEY: ${STORAGE_R2_SECRET_KEY:-}
+      STORAGE_R2_BUCKET: ${STORAGE_R2_BUCKET:-tempoo-exports}
+      ENABLE_OTEL: "false"
+    depends_on:
+      postgres: { condition: service_healthy }
+      clickhouse: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      api: { condition: service_started }
+
+  web:
+    <<: *restart
+    build:
+      context: .
+      dockerfile: selfhost/web.Dockerfile
+    environment:
+      PORT: "8080"
+      # Contact address shown on /feedback and /docs (empty = none shown) and the header text (empty = "Tempoo Analytics").
+      SUPPORT_EMAIL: ${SUPPORT_EMAIL:-}
+      BRAND_NAME: ${BRAND_NAME:-}
+
+  gateway:
+    <<: *restart
+    build:
+      context: .
+      dockerfile: src/TempooAnalytics.Gateway/Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_HTTP_PORTS: "8000"
+      ReverseProxy__Clusters__api-cluster__Destinations__destination1__Address: http://api:8080
+      ReverseProxy__Clusters__ingestion-cluster__Destinations__destination1__Address: http://ingestion:8081
+      ReverseProxy__Clusters__web-cluster__Destinations__destination1__Address: http://web:8080
+      # The admin console (Razor pages of the API: /admin/users, unlocked with ADMIN_MASTER_PASSWORD). The gateway's built-in table
+      # has no /admin route, so without this it would fall through to the web app.
+      ReverseProxy__Routes__admin-route__ClusterId: api-cluster
+      ReverseProxy__Routes__admin-route__Match__Path: /admin/{**catch-all}
+      ReverseProxy__Routes__admin-route__Order: "3"
+    ports:
+      # The only published port: put your TLS reverse proxy (or tunnel) in front of it.
+      - "${GATEWAY_PORT:-8000}:8000"
+    depends_on:
+      - api
+      - ingestion
+      - web
+
+volumes:
+  postgres-data:
+  clickhouse-data:
+  redis-data:
+  api-data:
+  ingestion-geoip:
+  ingestion-spill:

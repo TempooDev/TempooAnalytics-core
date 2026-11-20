@@ -1,0 +1,85 @@
+<div class="relative">
+    <button
+        id="notifications-button"
+        data-testid="notification-bell"
+        aria-haspopup="true"
+        [attr.aria-expanded]="open()"
+        [attr.aria-label]="badge() ? 'Notifications (' + notifications.unreadCount() + ' unread)' : 'Notifications'"
+        class="relative p-2 rounded-xl border border-slate-700 bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white transition-colors"
+        title="Notifications"
+        (click)="toggle(); $event.stopPropagation()">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+        @if (badge()) {
+            <span data-testid="notification-badge"
+                class="absolute -top-1.5 -right-1.5 min-w-5 h-5 px-1 rounded-full bg-rose-500 text-white text-[10px] font-black leading-5 text-center">
+                {{ badge() }}
+            </span>
+        }
+    </button>
+
+    @if (open()) {
+        <div role="menu"
+            aria-labelledby="notifications-button"
+            class="absolute right-0 mt-3 w-80 sm:w-96 bg-slate-900 border border-slate-800 text-slate-100 rounded-2xl shadow-2xl z-110 overflow-hidden"
+            (click)="$event.stopPropagation()">
+            <div class="flex items-center justify-between px-4 py-3 border-b border-slate-800">
+                <span class="text-sm font-bold">Notifications</span>
+                @if (notifications.unreadCount() > 0) {
+                    <button data-testid="mark-all-read" class="text-xs font-semibold text-sky-400 hover:text-sky-300" (click)="markAllRead()">
+                        Mark all as read
+                    </button>
+                }
+            </div>
+
+            @if (notifications.loading() && notifications.items().length === 0) {
+                <p class="px-4 py-6 text-sm text-slate-400 text-center">Loading…</p>
+            } @else if (notifications.items().length === 0) {
+                <div data-testid="notifications-empty" class="px-4 py-8 text-center">
+                    <p class="text-sm font-semibold text-slate-300">You're all caught up</p>
+                    <p class="mt-1 text-xs text-slate-500">Imports and exports will let you know here when they finish.</p>
+                </div>
+            } @else {
+                <ul class="max-h-96 overflow-y-auto divide-y divide-slate-800/60">
+                    @for (n of notifications.items(); track n.id) {
+                        <li>
+                            <button role="menuitem"
+                                class="w-full text-left px-4 py-3 flex gap-3 hover:bg-slate-800 transition-colors"
+                                [class.bg-slate-800/40]="!n.readAt"
+                                (click)="select(n)">
+                                <span class="mt-0.5 shrink-0"
+                                    [class.text-emerald-400]="n.severity === Severity.Success"
+                                    [class.text-rose-400]="n.severity === Severity.Error"
+                                    [class.text-amber-400]="n.severity === Severity.Warning"
+                                    [class.text-sky-400]="n.severity === Severity.Info">
+                                    @switch (n.severity) {
+                                        @case (Severity.Success) {
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
+                                        }
+                                        @case (Severity.Error) {
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>
+                                        }
+                                        @case (Severity.Warning) {
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+                                        }
+                                        @default {
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+                                        }
+                                    }
+                                </span>
+                                <span class="min-w-0 flex-1">
+                                    <span class="flex items-center justify-between gap-2">
+                                        <span class="text-sm truncate" [class.font-bold]="!n.readAt" [class.font-medium]="!!n.readAt">{{ n.title }}</span>
+                                        <span class="text-[11px] text-slate-500 shrink-0">{{ relativeTime(n.createdAt) }}</span>
+                                    </span>
+                                    @if (n.body) {
+                                        <span class="block mt-0.5 text-xs text-slate-400 line-clamp-2">{{ n.body }}</span>
+                                    }
+                                </span>
+                            </button>
+                        </li>
+                    }
+                </ul>
+            }
+        </div>
+    }
+</div>

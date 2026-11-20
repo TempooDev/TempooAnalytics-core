@@ -1,0 +1,25 @@
+<div class="rounded-2xl border border-slate-800 bg-slate-900/60 p-4">
+    <h2 class="text-sm font-medium mb-3">Top pages</h2>
+    <div class="overflow-x-auto">
+        <table class="min-w-full text-[11px]">
+            <thead class="text-slate-400 border-b border-slate-800">
+                <tr>
+                    <th class="py-2 text-left font-medium">Path</th>
+                    <th class="py-2 text-right font-medium">Pageviews</th>
+                    <th class="py-2 text-right font-medium">Avg time</th>
+                    <th class="py-2 text-right font-medium">Bounce</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-800">
+                @for (row of pages(); track row.path) {
+                <tr>
+                    <td class="py-2">{{ row.path }}</td>
+                    <td class="py-2 text-right">{{ row.views }}</td>
+                    <td class="py-2 text-right">{{ row.avg }}</td>
+                    <td class="py-2 text-right">{{ row.bounce }}</td>
+                </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

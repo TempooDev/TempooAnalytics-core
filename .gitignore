@@ -1,0 +1,122 @@
+######################################
+# .NET / ASP.NET Core
+######################################
+bin/
+obj/
+**/bin/
+**/obj/∫
+*.user
+*.rsuser
+*.suo
+*.userprefs
+*.cache
+*.pdb
+*.mdb
+*.mdb
+*.log
+*.pid
+*.config
+*.dll
+*.exe
+*.db
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+**/.npm-cache/*
+.npmrc
+# Publish
+**/publish/
+**/out/
+src/TempooAnalytics.Api.Tests/TestResults
+src/TempooAnalytics.Api.Tests/coveragereport
+######################################
+# Angular / Node
+######################################
+# Node modules
+**/node_modules/
+bin_output/
+# Angular build output
+**/dist/
+**/build/
+
+# Angular cache
+**/.angular/
+**/.angular/cache/
+
+# NPM / PNPM / Yarn debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Env vars
+.env
+.env.*.local
+
+######################################
+# Logs
+######################################
+*.log
+logs/
+**/logs/
+
+######################################
+# IDE / Editor files
+######################################
+# VS Code
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+!.vscode/launch.json
+!.vscode/tasks.json
+
+# JetBrains / Rider
+.idea/
+*.dotCover
+
+# Visual Studio
+.vs/
+
+######################################
+# OS files
+######################################
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Linux
+*~
+
+##################################
+src/TempooAnalytics.Api.Tests/TestResults/10cc421d-cdde-4a6f-aa11-a1f96a0ae256/coverage.cobertura.xml
+src/TempooAnalytics.Api.Tests/TestResults/test_results.trx
+src/TempooAnalytics.Api.Tests/TestResults/unit_test_results_filtered.trx
+src/TempooAnalytics.Api.Tests/TestResults/unit_test_results.trx
+src/TempooAnalytics.Api.Tests/TestResults/test_results.trx
+
+# Large Data Files
+src/TempooAnalytics.Ingestion/Data/GeoLite2-City.mmdb
+deploy/clickhouse/user_files/GeoLite2-City-Blocks-IPv4.csv
+deploy/clickhouse/user_files/GeoLite2-City-Blocks-IPv6.csv
+
+# MaxMind GeoLite2 (licence forbids redistribution): downloaded at runtime, see docs/geoip.md
+*.mmdb
+*.mmdb.download
+deploy/clickhouse/user_files/*
+!deploy/clickhouse/user_files/.gitkeep
+
+# Claude Code local worktrees and per-machine settings
+.claude/worktrees/
+.claude/settings.local.json
+
+# Stress-test stack (deploy/stress): generated secrets and k6 settings
+deploy/stress/.env
+deploy/stress/k6.env
+deploy/stress/.k6.env.*

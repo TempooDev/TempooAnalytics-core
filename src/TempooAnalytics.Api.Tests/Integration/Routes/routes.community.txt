@@ -1,0 +1,64 @@
+# modules: 
+# community: True
+* /alive | name=- | tags= | auth=-
+* /health | name=- | tags= | auth=-
+* /metrics | name=- | tags= | auth=-
+* admin/feedback | name=- | tags= | auth=-
+* admin/users | name=- | tags= | auth=-
+DELETE /api/admin/sites/{siteKey} | name=DeleteSite | tags= | auth=authorize
+DELETE /api/analytics/funnels/{id:guid} | name=DeleteFunnel | tags=Funnels | auth=authorize
+DELETE /api/sites/{siteKey}/write-key | name=- | tags=Site Management | auth=authorize
+GET / | name=- | tags=System | auth=-
+GET /api/admin/users | name=GetAllUsers | tags=Admin: Users | auth=policy:AdminPolicy
+GET /api/admin/users/{userId:guid}/sites | name=- | tags=Admin: Users | auth=policy:AdminPolicy
+GET /api/analytics/funnels/ | name=GetFunnels | tags=Funnels | auth=authorize
+GET /api/analytics/funnels/event-metadata | name=GetEventMetadata | tags=Funnels | auth=authorize
+GET /api/analytics/heatmaps/ | name=GetHeatmap | tags=Heatmaps | auth=authorize
+GET /api/analytics/heatmaps/pages | name=GetHeatmapPages | tags=Heatmaps | auth=authorize
+GET /api/analytics/sites | name=GetSitesSummary | tags=Analytics Data | auth=authorize
+GET /api/analytics/sites/{siteKey}/custom-events/summary | name=GetCustomEventCounts | tags= | auth=authorize
+GET /api/analytics/sites/{siteKey}/daily | name=GetSiteDailyMetrics | tags=Analytics Data | auth=authorize
+GET /api/analytics/sites/{siteKey}/locations | name=GetSiteLocations | tags=Analytics Data | auth=authorize
+GET /api/analytics/sites/{siteKey}/top-pages | name=GetTopPages | tags= | auth=authorize
+GET /api/auth/me | name=Me | tags=User Account | auth=authorize
+GET /api/auth/sites | name=MySites | tags=User Account | auth=authorize
+GET /api/dashboard/ | name=GetDashboard | tags=Analytics Dashboard | auth=authorize
+GET /api/dashboard/channels | name=GetChannelsDetails | tags=Analytics Dashboard | auth=authorize
+GET /api/dashboard/events | name=GetEventsDetails | tags=Analytics Dashboard | auth=authorize
+GET /api/dashboard/pages | name=GetPagesDetails | tags=Analytics Dashboard | auth=authorize
+GET /api/dashboard/referrers | name=GetReferrersDetails | tags=Analytics Dashboard | auth=authorize
+GET /api/features | name=GetFeatureFlags | tags=System | auth=anonymous
+GET /api/healthz | name=- | tags=System | auth=-
+GET /api/notifications/ | name=- | tags=Notifications | auth=authorize
+GET /api/notifications/unread-count | name=- | tags=Notifications | auth=authorize
+GET /api/public/heatmaps/overlay | name=GetHeatmapOverlay | tags=Heatmaps | auth=anonymous
+GET /api/sites/public/preview/{token} | name=- | tags=Public Preview | auth=anonymous
+GET /api/sites/{siteId}/export/status | name=GetExportStatus | tags=Analytics | auth=authorize
+GET /api/sites/{siteId}/imports/ | name=- | tags=Imports | auth=authorize
+GET,HEAD {*path:nonfile} | name=- | tags= | auth=-
+POST /analytics/events | name=IngestAnalyticsEvent | tags=Ingestion | auth=anonymous
+POST /api/admin/signup | name=Signup | tags=Admin: Users | auth=policy:AdminPolicy
+POST /api/admin/sites | name=CreateSite | tags=Admin: Sites | auth=authorize
+POST /api/admin/sites/{siteKey}/write-key | name=AdminGenerateSiteWriteKey | tags= | auth=-
+POST /api/admin/users/{userId:guid}/sites | name=- | tags=Admin: Users | auth=policy:AdminPolicy
+POST /api/analytics/funnels/ | name=CreateFunnel | tags=Funnels | auth=authorize
+POST /api/analytics/funnels/calculate | name=CalculateFunnel | tags=Funnels | auth=authorize
+POST /api/analytics/heatmaps/overlay-token | name=CreateHeatmapOverlayToken | tags=Heatmaps | auth=authorize
+POST /api/auth/admin-session | name=AdminSession | tags=Authentication | auth=-
+POST /api/auth/change-password | name=ChangePassword | tags=User Account | auth=authorize
+POST /api/auth/forgot-password | name=ForgotPassword | tags=Authentication | auth=-
+POST /api/auth/login | name=Login | tags=Authentication | auth=-
+POST /api/auth/logout | name=Logout | tags=Authentication | auth=-
+POST /api/auth/refresh | name=Refresh | tags=Authentication | auth=-
+POST /api/feedback/ | name=- | tags=Feedback | auth=authorize
+POST /api/notifications/read-all | name=- | tags=Notifications | auth=authorize
+POST /api/notifications/{id:guid}/read | name=- | tags=Notifications | auth=authorize
+POST /api/sites/{siteId}/export | name=- | tags= | auth=authorize
+POST /api/sites/{siteId}/imports/ga4/ | name=- | tags=Imports | auth=authorize
+POST /api/sites/{siteId}/imports/ga4/authorize | name=- | tags=Imports | auth=authorize
+POST /api/sites/{siteId}/imports/ga4/connect | name=- | tags=Imports | auth=authorize
+POST /api/sites/{siteId}/imports/plausible | name=- | tags=Imports | auth=authorize
+POST /api/sites/{siteKey}/share | name=- | tags=Public Preview | auth=authorize
+POST /api/sites/{siteKey}/write-key | name=- | tags=Site Management | auth=authorize
+POST /api/sites/{siteKey}/write-key/rotate | name=- | tags=Site Management | auth=authorize
+PUT /api/analytics/funnels/{id:guid} | name=UpdateFunnel | tags=Funnels | auth=authorize

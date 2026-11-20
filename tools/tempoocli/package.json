@@ -1,0 +1,7 @@
+{
+  "name": "tempoocli",
+  "version": "1.0.0",
+  "bin": {
+    "tempoo": "./tempoo.js"
+  }
+}

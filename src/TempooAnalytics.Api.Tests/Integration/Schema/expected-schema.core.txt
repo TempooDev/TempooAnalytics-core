@@ -1,0 +1,135 @@
+column jobs.export_jobs.completed_at timestamp with time zone
+column jobs.export_jobs.created_at timestamp with time zone NOT NULL DEFAULT now()
+column jobs.export_jobs.date_from timestamp with time zone NOT NULL
+column jobs.export_jobs.date_to timestamp with time zone NOT NULL
+column jobs.export_jobs.download_url text
+column jobs.export_jobs.error_message text
+column jobs.export_jobs.id uuid NOT NULL DEFAULT gen_random_uuid()
+column jobs.export_jobs.site_id uuid NOT NULL
+column jobs.export_jobs.status integer NOT NULL
+column jobs.export_jobs.user_id uuid NOT NULL
+column jobs.import_jobs.completed_at timestamp with time zone
+column jobs.import_jobs.configuration_json text
+column jobs.import_jobs.created_at timestamp with time zone NOT NULL DEFAULT now()
+column jobs.import_jobs.created_by_user_id uuid
+column jobs.import_jobs.end_date timestamp with time zone
+column jobs.import_jobs.error_message text
+column jobs.import_jobs.external_property_id text
+column jobs.import_jobs.id uuid NOT NULL DEFAULT gen_random_uuid()
+column jobs.import_jobs.rows_processed bigint NOT NULL
+column jobs.import_jobs.site_id uuid NOT NULL
+column jobs.import_jobs.start_date timestamp with time zone
+column jobs.import_jobs.started_at timestamp with time zone
+column jobs.import_jobs.status integer NOT NULL
+column jobs.import_jobs.total_rows_expected bigint NOT NULL
+column jobs.import_jobs.type integer NOT NULL
+column notifications.notifications.body character varying(1000)
+column notifications.notifications.created_at timestamp with time zone NOT NULL DEFAULT now()
+column notifications.notifications.id uuid NOT NULL DEFAULT gen_random_uuid()
+column notifications.notifications.link character varying(500)
+column notifications.notifications.read_at timestamp with time zone
+column notifications.notifications.severity smallint NOT NULL
+column notifications.notifications.site_id uuid
+column notifications.notifications.source_id uuid
+column notifications.notifications.title character varying(200) NOT NULL
+column notifications.notifications.type character varying(64) NOT NULL
+column notifications.notifications.user_id uuid NOT NULL
+column public.admin_write_key_audit.action text NOT NULL
+column public.admin_write_key_audit.admin_user text NOT NULL
+column public.admin_write_key_audit.created_at timestamp with time zone NOT NULL
+column public.admin_write_key_audit.id uuid NOT NULL DEFAULT gen_random_uuid()
+column public.admin_write_key_audit.site_key text NOT NULL
+column public.analytics_feedbacks.created_at timestamp with time zone NOT NULL DEFAULT now()
+column public.analytics_feedbacks.description text NOT NULL
+column public.analytics_feedbacks.id uuid NOT NULL DEFAULT gen_random_uuid()
+column public.analytics_feedbacks.title text NOT NULL
+column public.analytics_feedbacks.user_id uuid NOT NULL
+column public.analytics_funnels.created_at timestamp with time zone NOT NULL DEFAULT now()
+column public.analytics_funnels.id uuid NOT NULL DEFAULT gen_random_uuid()
+column public.analytics_funnels.name text NOT NULL
+column public.analytics_funnels.site_id uuid NOT NULL
+column public.analytics_funnels.steps jsonb NOT NULL
+column public.analytics_sites.allowed_origins text[]
+column public.analytics_sites.created_at timestamp with time zone NOT NULL
+column public.analytics_sites.id uuid NOT NULL DEFAULT gen_random_uuid()
+column public.analytics_sites.is_deleted boolean NOT NULL DEFAULT false
+column public.analytics_sites.name text NOT NULL
+column public.analytics_sites.owner_id uuid
+column public.analytics_sites.public_share_token text
+column public.analytics_sites.site_key text NOT NULL
+column public.analytics_sites.write_key text
+column public.analytics_user_sites.site_id uuid NOT NULL
+column public.analytics_user_sites.user_id uuid NOT NULL
+column public.analytics_users.activation_expires timestamp with time zone
+column public.analytics_users.activation_token text
+column public.analytics_users.created_at timestamp with time zone NOT NULL
+column public.analytics_users.email text
+column public.analytics_users.id uuid NOT NULL
+column public.analytics_users.is_active boolean NOT NULL
+column public.analytics_users.is_admin boolean NOT NULL
+column public.analytics_users.password_hash text NOT NULL
+column public.analytics_users.username text NOT NULL
+column public.audit_logs.action text NOT NULL
+column public.audit_logs.actor_id text NOT NULL
+column public.audit_logs.created_at timestamp with time zone NOT NULL
+column public.audit_logs.details jsonb
+column public.audit_logs.entity_id text NOT NULL
+column public.audit_logs.entity_type text NOT NULL
+column public.audit_logs.id uuid NOT NULL DEFAULT gen_random_uuid()
+column public.outbox_messages.aggregate_id uuid
+column public.outbox_messages.created_at timestamp with time zone NOT NULL
+column public.outbox_messages.error text
+column public.outbox_messages.id uuid NOT NULL DEFAULT gen_random_uuid()
+column public.outbox_messages.payload jsonb NOT NULL
+column public.outbox_messages.processed_at timestamp with time zone
+column public.outbox_messages.type text NOT NULL
+constraint jobs.export_jobs pk_export_jobs PRIMARY KEY (id)
+constraint jobs.import_jobs fk_import_jobs_users_created_by_user_id FOREIGN KEY (created_by_user_id) REFERENCES analytics_users(id) ON DELETE SET NULL
+constraint jobs.import_jobs pk_import_jobs PRIMARY KEY (id)
+constraint notifications.notifications fk_notifications_analytics_sites_site_id FOREIGN KEY (site_id) REFERENCES analytics_sites(id) ON DELETE CASCADE
+constraint notifications.notifications fk_notifications_users_user_id FOREIGN KEY (user_id) REFERENCES analytics_users(id) ON DELETE CASCADE
+constraint notifications.notifications pk_notifications PRIMARY KEY (id)
+constraint public.admin_write_key_audit pk_admin_write_key_audit PRIMARY KEY (id)
+constraint public.analytics_feedbacks fk_analytics_feedbacks_users_user_id FOREIGN KEY (user_id) REFERENCES analytics_users(id) ON DELETE CASCADE
+constraint public.analytics_feedbacks pk_analytics_feedbacks PRIMARY KEY (id)
+constraint public.analytics_funnels pk_analytics_funnels PRIMARY KEY (id)
+constraint public.analytics_sites pk_analytics_sites PRIMARY KEY (id)
+constraint public.analytics_user_sites pk_analytics_user_sites PRIMARY KEY (user_id, site_id)
+constraint public.analytics_users pk_analytics_users PRIMARY KEY (id)
+constraint public.audit_logs pk_audit_logs PRIMARY KEY (id)
+constraint public.outbox_messages pk_outbox_messages PRIMARY KEY (id)
+index CREATE INDEX ix_analytics_feedbacks_user_id ON public.analytics_feedbacks USING btree (user_id)
+index CREATE INDEX ix_import_jobs_created_by_user_id ON jobs.import_jobs USING btree (created_by_user_id)
+index CREATE INDEX ix_notifications_created_at ON notifications.notifications USING btree (created_at)
+index CREATE INDEX ix_notifications_site_id ON notifications.notifications USING btree (site_id)
+index CREATE INDEX ix_notifications_user_id_created_at_id ON notifications.notifications USING btree (user_id, created_at DESC, id DESC)
+index CREATE INDEX ix_notifications_user_id_unread ON notifications.notifications USING btree (user_id) WHERE (read_at IS NULL)
+index CREATE UNIQUE INDEX ix_analytics_users_email ON public.analytics_users USING btree (email)
+index CREATE UNIQUE INDEX ix_analytics_users_username ON public.analytics_users USING btree (username)
+index CREATE UNIQUE INDEX ix_notifications_user_id_type_source_id ON notifications.notifications USING btree (user_id, type, source_id) WHERE (source_id IS NOT NULL)
+index CREATE UNIQUE INDEX pk_admin_write_key_audit ON public.admin_write_key_audit USING btree (id)
+index CREATE UNIQUE INDEX pk_analytics_feedbacks ON public.analytics_feedbacks USING btree (id)
+index CREATE UNIQUE INDEX pk_analytics_funnels ON public.analytics_funnels USING btree (id)
+index CREATE UNIQUE INDEX pk_analytics_sites ON public.analytics_sites USING btree (id)
+index CREATE UNIQUE INDEX pk_analytics_user_sites ON public.analytics_user_sites USING btree (user_id, site_id)
+index CREATE UNIQUE INDEX pk_analytics_users ON public.analytics_users USING btree (id)
+index CREATE UNIQUE INDEX pk_audit_logs ON public.audit_logs USING btree (id)
+index CREATE UNIQUE INDEX pk_export_jobs ON jobs.export_jobs USING btree (id)
+index CREATE UNIQUE INDEX pk_import_jobs ON jobs.import_jobs USING btree (id)
+index CREATE UNIQUE INDEX pk_notifications ON notifications.notifications USING btree (id)
+index CREATE UNIQUE INDEX pk_outbox_messages ON public.outbox_messages USING btree (id)
+schema analytics_aggregates
+schema jobs
+schema notifications
+schema public
+table jobs.export_jobs
+table jobs.import_jobs
+table notifications.notifications
+table public.admin_write_key_audit
+table public.analytics_feedbacks
+table public.analytics_funnels
+table public.analytics_sites
+table public.analytics_user_sites
+table public.analytics_users
+table public.audit_logs
+table public.outbox_messages

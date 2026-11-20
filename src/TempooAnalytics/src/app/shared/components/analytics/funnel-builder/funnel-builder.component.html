@@ -1,0 +1,63 @@
+<form [formGroup]="form" (ngSubmit)="calculate()" class="space-y-4">
+
+    <div>
+        <label class="block text-sm font-medium text-slate-300">Funnel Name</label>
+        <input formControlName="name" type="text"
+            class="mt-1 block w-full bg-slate-900 border border-slate-700 rounded-md px-3 py-2 text-slate-200 focus:ring-sky-500 focus:border-sky-500" />
+    </div>
+
+    <div formArrayName="steps" class="space-y-3">
+        <label class="block text-sm font-medium text-slate-300">Steps</label>
+
+        <div *ngFor="let step of steps.controls; let i=index" [formGroupName]="i"
+            class="flex gap-2 items-end p-3 rounded-lg bg-slate-900/50 border border-slate-800">
+
+            <div class="flex-1">
+                <label class="text-xs text-slate-400">Step Name</label>
+                <input formControlName="name"
+                    class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs" />
+            </div>
+
+            <div class="w-24">
+                <label class="text-xs text-slate-400">Type</label>
+                <select formControlName="type"
+                    class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs">
+                    <option *ngFor="let t of stepTypes" [value]="t">{{t}}</option>
+                </select>
+            </div>
+
+            <div class="flex-1">
+                <label class="text-xs text-slate-400">Value (URL/Event)</label>
+                <input formControlName="value" list="eventsList"
+                    class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs" />
+                <datalist id="eventsList" *ngIf="metadata()">
+                    <option *ngFor="let e of metadata()?.eventNames" [value]="e"></option>
+                    <option *ngFor="let u of metadata()?.urls" [value]="u"></option>
+                </datalist>
+            </div>
+
+            <button type="button" (click)="removeStep(i)" class="text-red-400 hover:text-red-300 p-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <button type="button" (click)="addStep()"
+        class="text-sm text-sky-400 hover:text-sky-300 font-medium flex items-center gap-1">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+        Add Step
+    </button>
+
+    <div class="flex justify-end gap-3 pt-4 border-t border-slate-800">
+        <button type="button" (click)="calculate()" class="btn btn-secondary text-xs">Preview</button>
+        <button type="button" (click)="save()" class="btn btn-primary text-xs">Save Flow</button>
+    </div>
+</form>

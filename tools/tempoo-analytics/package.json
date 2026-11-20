@@ -1,0 +1,19 @@
+{
+  "name": "tempoo-analytics",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node ./scripts/build-community.mjs && esbuild tempoo-analytics.js --minify --format=iife --outfile=dist/analytics.js && esbuild heatmaps.js --minify --format=iife --outfile=dist/heatmaps.js && esbuild heatmap-overlay.js --minify --format=iife --outfile=dist/heatmap-overlay.js",
+    "compress": "node ./scripts/compress-analytics.mjs dist/analytics.js && node ./scripts/compress-analytics.mjs dist/heatmaps.js && node ./scripts/compress-analytics.mjs dist/heatmap-overlay.js",
+    "sync": "node ./scripts/sync-app-copy.mjs",
+    "build:all": "npm run build && npm run compress && npm run sync",
+    "test": "npm run build && vitest run"
+  },
+  "devDependencies": {
+    "esbuild": "^0.24.0",
+    "jsdom": "^25.0.1",
+    "vite": "^6.4.6",
+    "vitest": "^4.1.12"
+  }
+}

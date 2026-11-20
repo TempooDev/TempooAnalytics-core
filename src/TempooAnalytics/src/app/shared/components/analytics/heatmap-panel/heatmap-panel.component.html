@@ -1,0 +1,102 @@
+<div class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden relative">
+    <div class="px-6 py-4 border-b border-slate-800 bg-slate-800/50 flex flex-wrap items-center justify-between gap-3">
+        <div class="flex items-center gap-2">
+            <i class="pi pi-th-large text-rose-400"></i>
+            <h3 class="text-sm font-semibold text-slate-200">Heatmaps</h3>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+            <div class="flex rounded-lg border border-slate-700 overflow-hidden" role="group" aria-label="Device">
+                @for (d of devices; track d.value) {
+                <button (click)="device.set(d.value)" [attr.aria-pressed]="device() === d.value" [disabled]="locked()"
+                    [class]="'px-3 py-1 text-[11px] font-bold transition-colors ' + (device() === d.value ? 'bg-sky-600 text-white' : 'text-slate-400 hover:text-slate-200')">
+                    {{ d.label }}
+                </button>
+                }
+            </div>
+            <select (change)="days.set(+$any($event.target).value)" [disabled]="locked()" aria-label="Date range"
+                class="bg-slate-950 border border-slate-700 text-slate-300 text-[11px] rounded-lg px-2 py-1">
+                @for (r of ranges; track r) {
+                <option [value]="r" [selected]="r === days()">Last {{ r }} days</option>
+                }
+            </select>
+        </div>
+    </div>
+
+    @if (locked()) {
+    <ng-container *ngComponentOutlet="upsell; inputs: { kind: 'heatmaps' }" />
+    }
+
+    <div class="p-6 grid grid-cols-1 lg:grid-cols-3 gap-6" [class.opacity-20]="locked()">
+        <!-- Pages with click data -->
+        <div>
+            <p class="text-[10px] uppercase tracking-wider text-gray-500 font-bold mb-2">Pages</p>
+            <div class="space-y-1 max-h-80 overflow-y-auto pr-1">
+                @for (page of pages(); track page.path) {
+                <button (click)="selectPage(page.path)"
+                    [class]="'w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg text-left text-xs transition-colors border ' + (page.path === selectedPath() ? 'bg-slate-950 border-sky-500/40 text-slate-100' : 'border-transparent text-slate-400 hover:bg-slate-950')">
+                    <span class="truncate font-mono">{{ page.path }}</span>
+                    <span class="shrink-0 text-[10px] text-gray-500">{{ page.clicks | number }}</span>
+                </button>
+                }
+                @if (!loading() && pages().length === 0) {
+                <div class="py-8 text-center">
+                    <p class="text-sm text-slate-500 italic">No click data yet</p>
+                    <p class="text-[10px] text-slate-600 mt-1">Add <code class="text-sky-400">data-heatmaps="true"</code> to your tracking script.</p>
+                </div>
+                }
+            </div>
+        </div>
+
+        <!-- Elements and frustration -->
+        <div>
+            <div class="flex items-center justify-between mb-2">
+                <p class="text-[10px] uppercase tracking-wider text-gray-500 font-bold">Most clicked elements</p>
+                @if (selectedPath()) {
+                <button (click)="viewOnPage()" [disabled]="openingOverlay() || locked()"
+                    class="text-[10px] font-bold text-sky-500 hover:text-sky-400 uppercase tracking-widest transition-colors disabled:opacity-50">
+                    <i class="pi pi-external-link text-[9px] mr-1"></i>View on page
+                </button>
+                }
+            </div>
+            <div class="space-y-1 max-h-80 overflow-y-auto pr-1">
+                @for (el of heatmap()?.topElements ?? []; track el.selector) {
+                <div class="flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-slate-950 border border-slate-800">
+                    <code class="text-[11px] text-slate-300 break-all">{{ el.selector }}</code>
+                    <div class="shrink-0 flex items-center gap-2 text-[10px]">
+                        <span class="text-slate-400">{{ el.clicks | number }}</span>
+                        @if (el.rageClicks) { <span class="text-rose-400" title="Rage clicks">{{ el.rageClicks }} rage</span> }
+                        @if (el.deadClicks) { <span class="text-amber-400" title="Dead clicks">{{ el.deadClicks }} dead</span> }
+                    </div>
+                </div>
+                }
+                @if (heatmap() && heatmap()!.topElements.length === 0) {
+                <p class="py-8 text-center text-sm text-slate-500 italic">No clicks on this device</p>
+                }
+            </div>
+            @if (frustratedElements().length) {
+            <p class="mt-3 text-[10px] text-rose-300/80">
+                {{ frustratedElements().length }} element(s) with rage or dead clicks: people expect them to do something.
+            </p>
+            }
+        </div>
+
+        <!-- Scroll depth -->
+        <div>
+            <p class="text-[10px] uppercase tracking-wider text-gray-500 font-bold mb-2">Scroll depth</p>
+            <div class="space-y-1.5">
+                @for (s of heatmap()?.scroll ?? []; track s.depth) {
+                <div class="flex items-center gap-2 text-[10px]">
+                    <span class="w-9 text-right text-gray-500">{{ s.depth }}%</span>
+                    <div class="flex-1 h-2 bg-slate-950 rounded-full overflow-hidden">
+                        <div class="h-full bg-sky-500/70" [style.width.%]="s.reachedPct"></div>
+                    </div>
+                    <span class="w-10 text-slate-300">{{ s.reachedPct | number:'1.0-0' }}%</span>
+                </div>
+                }
+            </div>
+            @if (heatmap()) {
+            <p class="mt-3 text-[10px] text-gray-500">Share of page views that reached each depth.</p>
+            }
+        </div>
+    </div>
+</div>

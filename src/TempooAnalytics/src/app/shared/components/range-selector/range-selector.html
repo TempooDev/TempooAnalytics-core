@@ -1,0 +1,16 @@
+<div class="flex items-center gap-3">
+    <div class="relative inline-block">
+        <select
+            class="appearance-none bg-slate-900 border border-slate-700 text-xs rounded-lg px-3 py-1.5 pr-8 focus:outline-none focus:ring-2 focus:ring-sky-500"
+            (change)="onSelectChange($event)">
+            <option [value]="7">Last 7 days</option>
+            <option [value]="30">Last 30 days</option>
+            <option [value]="90">Last 90 days</option>
+        </select>
+        <!-- custom arrow -->
+        <svg class="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-slate-400"
+            viewBox="0 0 20 20" fill="none" stroke="currentColor">
+            <path d="M6 8l4 4 4-4" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" />
+        </svg>
+    </div>
+</div>

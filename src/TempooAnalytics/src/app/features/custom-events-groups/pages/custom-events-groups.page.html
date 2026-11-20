@@ -1,0 +1,117 @@
+<div class="max-w-6xl mx-auto">
+    <h2 class="text-2xl font-semibold mb-4">Custom Event Group Explorer</h2>
+
+    @if (loadingSites()) {
+    <p-progressBar mode="indeterminate" class="mb-4"></p-progressBar>
+    }
+    @if (error()) {
+    <p-message severity="error" [text]="error()!" class="mb-4"></p-message>
+    }
+
+    <form class="p-fluid" (ngSubmit)="query()" #groupForm="ngForm">
+        <div class="grid formgrid">
+            <div class="field col-12 md:col-4">
+                <label for="siteKey" class="block mb-1">Site</label>
+                <p-autoComplete [ngModel]="selectedSite()" (ngModelChange)="selectedSite.set($event)" name="site"
+                    [suggestions]="filteredSites()" (completeMethod)="filterSites($event)" field="name"
+                    [dropdown]="true" (onSelect)="onSiteSelect($event)" placeholder="Select a site"
+                    [forceSelection]="true" [showClear]="true" [appendTo]="'body'">
+                    <ng-template pTemplate="item" let-site>
+                        <div class="flex flex-column">
+                            <span class="font-medium">{{ site.name }}</span>
+                            <span class="text-xs text-gray-500">{{ site.siteKey }}</span>
+                        </div>
+                    </ng-template>
+                    <ng-template pTemplate="selectedItem" let-site>
+                        <span>{{ site.name }}</span>
+                    </ng-template>
+                </p-autoComplete>
+                @if (selectedSite()) {
+                <small class="text-xs text-gray-500">Key: {{ selectedSite()!.siteKey }}</small>
+                }
+            </div>
+            <div class="field col-12 md:col-4">
+                <label for="eventName">Event Name</label>
+                <input pInputText [ngModel]="eventName()" (ngModelChange)="eventName.set($event)" name="eventName"
+                    placeholder="cta_click" />
+            </div>
+            <div class="field col-12 md:col-4">
+                <label for="days">Days</label>
+                <input pInputText type="number" [ngModel]="days()" (ngModelChange)="days.set($event)" name="days" />
+            </div>
+        </div>
+
+        <div class="field">
+            <label for="groupKeysText">Grouping Keys (comma separated)</label>
+            <input pInputText [ngModel]="groupKeysText()" (ngModelChange)="groupKeysText.set($event)"
+                name="groupKeysText" placeholder="button,color" />
+        </div>
+
+        <div class="field">
+            <label>Filters</label>
+            <div class="flex align-items-center justify-content-between mb-2">
+                <button pButton type="button" (click)="addFilterRow()" label="Add" icon="pi pi-plus"
+                    class="p-button-sm"></button>
+                @if (filterRows().length) {
+                <button pButton type="button" (click)="clearFilters()" label="Clear" icon="pi pi-times"
+                    class="p-button-sm p-button-secondary"></button>
+                }
+            </div>
+            @if (filterRows().length === 0) {
+            <div class="text-sm text-gray-500 mb-2">No filters. Add to constrain results (e.g. color=blue).</div>
+            }
+            <div class="grid">
+                @for (fr of filterRows(); track $index; let i = $index) {
+                <div class="col-12 md:col-6 lg:col-4">
+                    <div class="p-inputgroup">
+                        <input pInputText [(ngModel)]="fr.key" [name]="'filterKey' + i" placeholder="key" />
+                        <input pInputText [(ngModel)]="fr.value" [name]="'filterVal' + i" placeholder="value" />
+                        <button pButton type="button" (click)="removeFilterRow(i)" icon="pi pi-times"
+                            class="p-button-danger p-button-sm"></button>
+                    </div>
+                </div>
+                }
+            </div>
+        </div>
+
+        <div class="mt-4 flex align-items-center gap-3">
+            <button pButton type="submit" [disabled]="querying()" [label]="querying() ? 'Querying...' : 'Run Query'"
+                class="p-button-primary"></button>
+            @if (querying()) {
+            <p-progressSpinner style="width: 20px; height: 20px;"></p-progressSpinner>
+            }
+        </div>
+    </form>
+
+    @if (results().length) {
+    <p-table [value]="results()" [responsiveLayout]="'scroll'" class="mt-4">
+        <ng-template pTemplate="header">
+            <tr>
+                @for (k of displayedKeys(); track k) {
+                <th>{{ k }}</th>
+                }
+                <th>Count</th>
+                <th>Actions</th>
+            </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-row>
+            <tr>
+                @for (k of displayedKeys(); track k) {
+                <td>{{ row.keys[k] }}</td>
+                }
+                <td>{{ row.count }}</td>
+                <td>
+                    <button pButton type="button" (click)="adoptRow(row)" label="Use as Filters"
+                        class="p-button-sm"></button>
+                    <button pButton type="button" (click)="copyRow(row)" label="Copy"
+                        class="p-button-sm p-button-secondary"></button>
+                </td>
+            </tr>
+        </ng-template>
+    </p-table>
+    }
+
+    @if (!querying() && !results().length) {
+    <p-message severity="info" text="Run a query to see grouped results." class="mt-4"></p-message>
+    }
+</div>

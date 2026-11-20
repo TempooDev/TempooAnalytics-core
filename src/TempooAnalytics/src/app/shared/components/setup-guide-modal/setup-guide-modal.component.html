@@ -1,0 +1,97 @@
+<div class="fixed inset-0 z-100 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4 animate-in fade-in duration-200"
+  (click)="onClose()">
+  <div class="bg-[#081026] border border-[#1f2a3a] rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden animate-in zoom-in-95 duration-200"
+    (click)="$event.stopPropagation()">
+    <!-- Header -->
+    <div class="px-6 py-4 border-b border-[#1f2a3a] flex items-center justify-between bg-slate-900/50">
+      <h3 class="text-xl font-bold text-white flex items-center gap-2">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-sky-400">
+          <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
+        </svg>
+        Finish Setup
+      </h3>
+      <button (click)="onClose()" class="text-slate-400 hover:text-white transition-colors">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M18 6 6 18" />
+          <path d="m6 6 12 12" />
+        </svg>
+      </button>
+    </div>
+
+    <!-- Content -->
+    <div class="p-6 space-y-6">
+      <div class="bg-sky-500/10 border border-sky-500/20 rounded-xl p-4">
+        <p class="text-sky-200 text-sm">
+          To start tracking your website, you need to add this script tag to your site's <code>&lt;head&gt;</code>.
+        </p>
+      </div>
+
+      <div class="space-y-3">
+        <label class="text-sm font-medium text-slate-300">Copy & Paste this code:</label>
+        <div class="relative group">
+          <pre class="bg-slate-950 p-4 rounded-xl border border-slate-800 overflow-x-auto text-sm text-sky-400 font-mono shadow-inner min-h-[120px]"><code>{{ scriptTag }}</code></pre>
+          <button (click)="copyToClipboard(scriptTag)"
+            class="absolute top-3 right-3 bg-sky-600 hover:bg-sky-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 shadow-lg shadow-sky-600/20">
+            @if (copied()) {
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              Copied!
+            } @else {
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+              Copy Code
+            }
+          </button>
+        </div>
+      </div>
+
+      @if (heatmapsEnabled()) {
+      <div class="bg-slate-900/30 border border-slate-800 p-4 rounded-xl">
+        <h4 class="text-white font-semibold mb-1 text-sm">Optional: heatmaps</h4>
+        <p class="text-slate-400 text-xs leading-relaxed">
+          @if (hasPlans) {On plans with advanced analytics, add} @else {Add} <code class="text-sky-400">data-heatmaps="true"</code> to the script tag to see where
+          visitors click, rage clicks, dead clicks and scroll depth. It stays anonymous: no cookies, no text or form values.
+        </p>
+      </div>
+      }
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="bg-slate-900/30 border border-slate-800 p-4 rounded-xl">
+          <h4 class="text-white font-semibold mb-1 text-sm">Site ID</h4>
+          <code class="text-sky-400 text-xs">{{ siteId }}</code>
+        </div>
+        <div class="bg-slate-900/30 border border-slate-800 p-4 rounded-xl">
+          <h4 class="text-white font-semibold mb-1 text-sm">Write Key</h4>
+          <code class="text-sky-400 text-xs">{{ writeKey }}</code>
+        </div>
+      </div>
+
+      <div class="flex flex-col items-center text-center py-2">
+        <p class="text-slate-400 text-sm mb-4">
+          Need help with frameworks like React, Vue, or Blazor?
+        </p>
+        <button (click)="goToDocs()"
+          class="flex items-center gap-2 text-sky-400 hover:text-sky-300 font-semibold transition-colors group">
+          View full integration guide
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+            class="group-hover:translate-x-1 transition-transform">
+            <path d="m9 18 6-6-6-6" />
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="px-6 py-4 bg-slate-900/50 border-t border-[#1f2a3a] flex justify-end gap-3">
+      <button (click)="onClose()"
+        class="px-6 py-2 rounded-xl text-slate-300 hover:text-white font-medium hover:bg-slate-800 transition-all">
+        Dismiss
+      </button>
+      <button (click)="onClose()"
+        class="px-6 py-2 bg-slate-100 hover:bg-white text-slate-950 rounded-xl font-bold transition-all shadow-lg shadow-white/5">
+        Got it!
+      </button>
+    </div>
+  </div>
+</div>

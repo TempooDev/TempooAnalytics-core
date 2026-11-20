@@ -1,0 +1,30 @@
+<svg width="120" height="120" viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Degradado -->
+    <linearGradient id="tempooGradient" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#3B82F6"/>
+      <stop offset="50%" stop-color="#6366F1"/>
+      <stop offset="100%" stop-color="#EC4899"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Contenedor -->
+  <rect x="0" y="0" width="60" height="60" rx="18" fill="url(#tempooGradient)"/>
+
+  <!-- Sparkline -->
+  <polyline
+    points="10,38 20,30 30,36 40,22 50,28"
+    fill="none"
+    stroke="#ffffff"
+    stroke-width="3"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+
+  <!-- Puntos -->
+  <circle cx="10" cy="38" r="2.5" fill="#ffffff"/>
+  <circle cx="20" cy="30" r="2.5" fill="#ffffff"/>
+  <circle cx="30" cy="36" r="2.5" fill="#ffffff"/>
+  <circle cx="40" cy="22" r="2.5" fill="#ffffff"/>
+  <circle cx="50" cy="28" r="2.5" fill="#ffffff"/>
+</svg>

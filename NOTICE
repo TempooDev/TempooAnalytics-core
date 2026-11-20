@@ -1,0 +1,35 @@
+TempooAnalytics
+Copyright (C) Antonio Bermúdez and contributors
+
+This product includes third-party software. The licence of each component
+is that of its original distribution; this list summarises the most relevant ones.
+The automated check is in .github/workflows/compliance.yml.
+
+--- Weak copyleft library ---
+
+Hangfire (Hangfire.AspNetCore, Hangfire.PostgreSql)
+  https://www.hangfire.io/ · LGPL-3.0
+  Linked as an unmodified NuGet library. The text of the LGPL-3.0 and of the
+  GPL-3.0 it refers to is available at https://www.gnu.org/licenses/.
+  You may replace the library with another compatible version.
+
+--- Main components (MIT or Apache-2.0) ---
+
+.NET, ASP.NET Core, Entity Framework Core, Microsoft.Extensions.*, .NET Aspire,
+Yarp.ReverseProxy, OpenTelemetry (.NET and Go), Dapper, FluentValidation, Npgsql,
+EFCore.NamingConventions, ClickHouse.Client, Scalar.AspNetCore,
+ModelContextProtocol, Google.Protobuf, Grpc, AWSSDK.S3, Newtonsoft.Json,
+MessagePack, MaxMind.GeoIP2 (library), Gin, pgx, go-redis, clickhouse-go,
+aws-sdk-go-v2, prometheus/client_golang, swag, Angular, RxJS, PrimeNG,
+Tailwind CSS, MapLibre GL, Astro.
+
+--- Data ---
+
+The MaxMind GeoLite2 databases are not distributed with the code: they are
+downloaded with the operator's licence key (MAXMIND_LICENSE_KEY). This product
+includes GeoLite2 data created by MaxMind, available from https://www.maxmind.com.
+
+--- Test tooling (not distributed) ---
+
+xUnit, AwesomeAssertions, Moq, Respawn, Testcontainers, coverlet, Vitest,
+Playwright, miniredis.

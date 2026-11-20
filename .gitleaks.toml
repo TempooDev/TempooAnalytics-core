@@ -1,0 +1,29 @@
+# gitleaks configuration.
+title = "TempooAnalytics gitleaks"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Known false positives: public tracker keys, fixtures and test values."
+paths = [
+  '''(^|/)node_modules/''',
+  '''(^|/)dist/''',
+  '''(^|/)\.angular/''',
+  '''_test\.go$''',
+  '''\.(spec|test)\.ts$''',
+  '''(^|/)[^/]*\.Tests?/''',
+  '''^docs/open-source-audit\.md$''',
+  # Public demo token of the preview page.
+  '''preview\.page\.ts$''',
+]
+# The expressions are matched against the whole line (by default, only against the detected value).
+regexTarget = "line"
+regexes = [
+  # writeKey / data-key of the site's own tracker: it is a public key that goes in the HTML.
+  '''(writeKey|data-key)\s*[:=]\s*['"][A-Za-z0-9_\-]+['"]''',
+  # Alphabet used to generate passwords: not a credential.
+  '''PasswordChars\s*=''',
+  # Alphabet used to generate the first administrator's password (FirstAdminBootstrapper): not a credential.
+  '''PasswordAlphabet\s*=''',
+]

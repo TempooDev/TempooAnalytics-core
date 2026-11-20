@@ -1,0 +1,27 @@
+<div class="rounded-2xl bg-slate-900/40 shadow-[0_0_0_1px_rgba(255,255,255,0.03)] p-6">
+    <h2 class="text-sm font-medium mb-4">{{ title() }}</h2>
+    <div class="space-y-4 text-xs">
+        @for (site of sites(); track site.name) {
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="font-medium text-slate-100">{{ site.name }}</p>
+                @if (site.domain) {
+                <p class="text-slate-500">{{ site.domain }}</p>
+                }
+            </div>
+            <div class="text-right">
+                <p class="font-semibold">{{ site.views | number }}</p>
+                <span class="text-[10px] rounded-full px-2 py-0.5" [class]="
+                        site.change > 0
+                            ? 'text-emerald-400 bg-emerald-500/10'
+                            : site.change < 0
+                                ? 'text-red-400 bg-red-500/10'
+                                : 'text-slate-400 bg-slate-700/40'
+                    ">
+                    {{ site.change > 0 ? '+' : '' }}{{ site.change }}%
+                </span>
+            </div>
+        </div>
+        }
+    </div>
+</div>

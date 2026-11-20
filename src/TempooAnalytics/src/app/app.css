@@ -1,0 +1,123 @@
+/* PrimeNG DatePicker Overrides for TempooAnalytics */
+:root {
+    /* Define PrimeNG 18+ Tokens for Sky Blue theme */
+    --p-primary-50: #f0f9ff;
+    --p-primary-100: #e0f2fe;
+    --p-primary-200: #bae6fd;
+    --p-primary-300: #7dd3fc;
+    --p-primary-400: #38bdf8;
+    --p-primary-500: #0ea5e9;
+    --p-primary-600: #0284c7;
+    --p-primary-700: #0369a1;
+    --p-primary-800: #075985;
+    --p-primary-900: #0c4a6e;
+    --p-primary-950: #082f49;
+    --p-primary-color: var(--p-primary-400);
+    --p-primary-contrast-color: #ffffff;
+    --p-primary-hover-color: var(--p-primary-500);
+    --p-primary-active-color: var(--p-primary-600);
+
+    /* DatePicker Specific Tokens */
+    --p-datepicker-panel-background: #0f172a; /* slate-900 */
+    --p-datepicker-panel-border-color: #1e293b; /* slate-800 */
+    --p-datepicker-header-background: #1e293b;
+    --p-datepicker-header-text-color: #f8fafc;
+    --p-datepicker-day-text-color: #cbd5e1;
+    --p-datepicker-day-hover-background: #334155;
+    --p-datepicker-day-selected-background: var(--p-primary-400);
+    --p-datepicker-day-selected-color: #ffffff;
+    --p-datepicker-today-text-color: var(--p-primary-400);
+    
+    /* Range selection tokens */
+    --p-datepicker-range-selection-background: rgba(56, 189, 248, 0.15) !important;
+    --p-datepicker-range-selection-color: #38bdf8 !important;
+}
+
+/* Force Sky Blue on all PrimeNG primary elements */
+.p-datepicker-day-selected,
+.p-datepicker-day-selected:hover,
+.p-datepicker-month-selected,
+.p-datepicker-year-selected {
+    background: var(--p-primary-400) !important;
+    color: #ffffff !important;
+}
+
+/* Range background fix */
+.p-datepicker-day-range-selected {
+    background: rgba(56, 189, 248, 0.15) !important;
+    color: #38bdf8 !important;
+}
+
+/* Fix for PrimeNG 18+ selection tones */
+.p-datepicker-day:not(.p-datepicker-day-selected):not(.p-disabled):hover {
+    background: #334155 !important;
+    color: #f8fafc !important;
+}
+
+.p-datepicker-day-selected {
+    background: #0ea5e9 !important; /* sky-500 */
+    color: #ffffff !important;
+}
+
+/* Today indicator */
+.p-datepicker-today > span {
+    border-color: #38bdf8 !important;
+    color: #38bdf8 !important;
+}
+
+.p-datepicker {
+    font-family: 'Inter', sans-serif !important;
+    box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.7), 0 8px 10px -6px rgb(0 0 0 / 0.7) !important;
+    border: 1px solid #1e293b !important;
+    background: #0f172a !important;
+}
+
+.p-datepicker .p-datepicker-header {
+    padding: 0.75rem !important;
+    border-bottom: 1px solid #1e293b !important;
+    background: #1e293b !important;
+}
+
+.p-datepicker table th {
+    padding: 0.5rem !important;
+    font-size: 0.65rem !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.1em !important;
+    color: #64748b !important;
+    font-weight: 800 !important;
+}
+
+.p-datepicker table td > span {
+    width: 2.25rem !important;
+    height: 2.25rem !important;
+    font-size: 0.75rem !important;
+    border-radius: 10px !important;
+    transition: all 0.2s !important;
+}
+
+.p-datepicker .p-timepicker {
+    border-top: 1px solid #1e293b !important;
+    padding: 0.75rem !important;
+    background: #0f172a !important;
+}
+
+/* Fix for the "weird" closing issue: 
+   Prevent clicks on the panel from bubbling to parents that might close the modal */
+.p-datepicker-panel {
+    pointer-events: auto !important;
+}
+
+/* Tooltip Styles */
+.p-tooltip .p-tooltip-text {
+    background: #1e293b !important; /* slate-800 */
+    color: #f8fafc !important; /* slate-50 */
+    font-size: 0.7rem !important;
+    font-weight: 600 !important;
+    padding: 0.4rem 0.6rem !important;
+    border: 1px solid #334155 !important; /* slate-700 */
+    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.5) !important;
+}
+
+.p-tooltip-arrow {
+    border-top-color: #1e293b !important;
+}

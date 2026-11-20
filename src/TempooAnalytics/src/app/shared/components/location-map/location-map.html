@@ -1,0 +1,11 @@
+<div [class]="containerClass()">
+    @if (!simpleMode()) {
+    <h2 class="text-sm font-medium mb-4">Top Locations</h2>
+    }
+    <div #map [class]="mapClass()"></div>
+    <!-- Tooltip -->
+    <div #tooltip
+        class="pointer-events-none absolute z-50 bg-slate-800 text-white text-xs px-3 py-2 rounded shadow-xl border border-slate-600 opacity-0 transition-opacity duration-150 font-sans"
+        style="transform: translate(-50%, -120%); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);">
+    </div>
+</div>

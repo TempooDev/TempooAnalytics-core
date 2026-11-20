@@ -1,0 +1,184 @@
+name: CI
+
+# Continuous integration of the public repository (TempooAnalytics-core): the .NET solution (build + tests), the Angular app
+# (community build), the Go worker, the tracker and the DCO sign-off of pull request commits. GitHub-hosted runners only.
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+# One run per workflow and ref: a new push to a PR cancels the previous run. Never cancelled on the default branch
+# nor on manual runs.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  # Build of the whole solution and the .NET tests. Api.Tests starts PostgreSQL with Testcontainers (Docker is on the runner).
+  dotnet:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      DOTNET_CLI_TELEMETRY_OPTOUT: '1'
+      DOTNET_NOLOGO: '1'
+      # Api.Tests starts many in-process hosts: poll files instead of using one inotify instance per host.
+      DOTNET_USE_POLLING_FILE_WATCHER: 'true'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Raise the inotify limit
+        # The runner allows 128 inotify instances; the API test hosts reach that and fail with an IOException.
+        run: sudo sysctl -w fs.inotify.max_user_instances=1024
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', 'Directory.Packages.props', 'global.json') }}
+          restore-keys: nuget-${{ runner.os }}-
+
+      # No shared compiler server or node reuse: they would stay in memory after the job.
+      - name: Build (whole solution)
+        run: |
+          dotnet restore
+          dotnet build --no-restore --configuration Release -m:2 -nodeReuse:false -p:UseSharedCompilation=false
+
+      - name: Gateway tests
+        run: dotnet test src/TempooAnalytics.Gateway.Tests/TempooAnalytics.Gateway.Tests.csproj --no-build --configuration Release --verbosity minimal -- xunit.maxParallelThreads=2
+
+      - name: API tests
+        run: dotnet test src/TempooAnalytics.Api.Tests/TempooAnalytics.Api.Tests.csproj --no-build --configuration Release --verbosity minimal -- xunit.maxParallelThreads=2
+
+  frontend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: src/TempooAnalytics
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: src/TempooAnalytics/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Unit tests
+        run: npx vitest run
+
+      - name: Build (community)
+        run: npm run build:community
+
+  # The ingestion, importer and public worker services.
+  go:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: src/TempooAnalytics.Go
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: src/TempooAnalytics.Go/go.mod
+          cache-dependency-path: src/TempooAnalytics.Go/go.sum
+
+      - name: Build
+        run: go build ./...
+
+      - name: Test
+        run: go test ./...
+
+  tracker:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: tools/tempoo-analytics
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: tools/tempoo-analytics/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Test tracker
+        run: npm test
+
+  # Developer Certificate of Origin: every commit of a pull request must carry a "Signed-off-by: Name <email>" line
+  # (git commit -s). Plain git on a GitHub-hosted runner, no third-party action and no secrets. On pushes and manual runs
+  # there is nothing to check and the job passes.
+  dco:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        if: github.event_name == 'pull_request'
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Check Signed-off-by
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          git cat-file -e "$BASE_SHA^{commit}" 2>/dev/null || git fetch --no-tags --quiet origin "$BASE_SHA"
+          missing=0
+          for c in $(git rev-list --no-merges "$BASE_SHA..$HEAD_SHA"); do
+            if git log -1 --format=%B "$c" | grep -Eiq '^Signed-off-by: [^<>]+ <[^<>[:space:]]+@[^<>[:space:]]+>[[:space:]]*$'; then
+              echo "ok      $(git log -1 --format='%h %s' "$c")"
+            else
+              echo "::error::Commit $(git log -1 --format='%h (%an): %s' "$c") has no Signed-off-by line"
+              missing=$((missing + 1))
+            fi
+          done
+          if [ "$missing" -gt 0 ]; then
+            echo "$missing commit(s) without a sign-off. Sign them off (git commit -s, or git rebase --signoff $BASE_SHA) and push again." >&2
+            exit 1
+          fi
+
+  # Single check to require in branch protection: it passes when every job passed and fails if any failed or was cancelled.
+  ci-ok:
+    if: always()
+    needs: [ dotnet, frontend, go, tracker, dco ]
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Check results
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "Results: $RESULTS"
+          case " $RESULTS " in
+            *" failure "*|*" cancelled "*|*" skipped "*) echo "::error::A CI job failed, was cancelled or did not run"; exit 1 ;;
+          esac

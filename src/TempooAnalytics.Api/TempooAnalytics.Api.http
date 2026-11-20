@@ -1,0 +1,94 @@
+@Api_HostAddress = http://localhost:5116
+
+###
+# 🔥 Basic check: ping
+GET {{Api_HostAddress}}/
+Accept: application/json
+
+
+###
+# 📡 Send a pageview from the landing page (simulates the script)
+POST {{Api_HostAddress}}/analytics/events
+Content-Type: application/json
+
+{
+  "siteId": "landing-tempoo",
+  "type": "pageview",
+  "url": "https://tempoo.dev/",
+  "referrer": "https://google.com/",
+  "visitorId": "v-123",
+  "sessionId": "s-123",
+  "eventName": null,
+  "data": null,
+  "timestamp": "2025-01-01T12:00:00Z"
+}
+
+###
+# 🎯 Send a custom event (cta_click)
+POST {{Api_HostAddress}}/analytics/events
+Content-Type: application/json
+
+{
+  "siteId": "landing-tempoo",
+  "type": "custom",
+  "url": "https://tempoo.dev/",
+  "referrer": null,
+  "visitorId": "v-123",
+  "sessionId": "s-123",
+  "eventName": "cta_click",
+  "data": {
+    "button": "hero",
+    "color": "blue"
+  },
+  "timestamp": "2025-01-01T12:01:00Z"
+}
+
+###
+# 🧾 Send a purchase event (payment)
+POST {{Api_HostAddress}}/analytics/events
+Content-Type: application/json
+
+{
+  "siteId": "landing-tempoo",
+  "type": "payment",
+  "url": "/checkout/complete",
+  "referrer": null,
+  "visitorId": "v-123",
+  "sessionId": "s-123",
+  "eventName": "purchase",
+  "data": {
+    "amount": 49,
+    "currency": "EUR"
+  },
+  "timestamp": "2025-12-01T12:02:00Z"
+}
+
+
+###
+# 📊 Get the list of sites
+# (Id, key, name, total events, pageviews, last event)
+GET {{Api_HostAddress}}/analytics/sites
+Accept: application/json
+
+
+###
+# 📈 Get the daily metrics of a site (last 30 days)
+GET {{Api_HostAddress}}/analytics/sites/demo-site/daily?days=360
+Accept: application/json
+
+
+###
+# 📈 Daily metrics for another site
+GET {{Api_HostAddress}}/analytics/sites/app-tempoo/daily?days=30
+Accept: application/json
+
+
+###
+# 🚨 Try an invalid event (site missing)
+POST {{Api_HostAddress}}/analytics/events
+Content-Type: application/json
+
+{
+  "type": "pageview",
+  "url": "https://tempoo.dev/"
+}

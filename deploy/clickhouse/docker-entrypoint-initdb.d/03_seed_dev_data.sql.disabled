@@ -1,0 +1,136 @@
+-- ClickHouse Seed Script for TempooAnalytics
+-- Generates realistic test data for the last 7 days
+-- Safe to re-run: truncates first
+
+-- 0. Clean up existing data
+TRUNCATE TABLE IF EXISTS tempoo_analytics.events;
+
+-- 1. Generate ~10,000 session IDs into a helper table for reuse
+CREATE TEMPORARY TABLE IF NOT EXISTS _tmp_sessions (
+    session_id UUID,
+    visitor_id String,
+    visitor_num UInt32
+) ENGINE = Memory;
+
+INSERT INTO _tmp_sessions
+SELECT
+    generateUUIDv4() AS session_id,
+    concat('visitor_', toString(number % 500)) AS visitor_id,
+    number % 500 AS visitor_num
+FROM numbers(10000);
+
+-- 2. Insert realistic HUMAN events (~50k rows, using sessions from helper)
+INSERT INTO tempoo_analytics.events (
+    site_id, timestamp, event_name, visitor_id, session_id, path, referrer, referrer_domain,
+    country_code, browser, os, device_type, screen_width, screen_height, user_agent,
+    traffic_type, user_hash, city_name, utm_source, utm_medium, utm_campaign, asn, data
+)
+SELECT
+    toUUID('10000000-0000-0000-0000-000000000001') AS site_id,
+
+    -- Random timestamp in the last 7 days (relative to NOW so data is always fresh)
+    now() - toIntervalSecond(rand() % 604800) AS timestamp,
+
+    -- 80% pageviews, 20% custom events
+    arrayElement(
+        ['pageview', 'pageview', 'pageview', 'pageview', 'pageview', 'pageview', 'pageview', 'pageview', 'custom_click', 'custom_signup'],
+        1 + (rand() % 10)
+    ) AS event_name,
+
+    -- Visitor from session helper
+    s.visitor_id AS visitor_id,
+
+    -- Reuse session_id so multiple events share a session
+    s.session_id AS session_id,
+
+    -- Realistic paths
+    arrayElement(['/', '/pricing', '/docs', '/blog', '/contact'], 1 + (rand() % 5)) AS path,
+
+    -- Realistic referrers
+    arrayElement(['https://google.com', 'https://github.com', 'https://twitter.com', ''], 1 + (rand() % 4)) AS referrer,
+
+    -- Referrer domain (computed independently, not from alias)
+    arrayElement(['google.com', 'github.com', 'twitter.com', ''], 1 + (rand() % 4)) AS referrer_domain,
+
+    -- Realistic countries
+    arrayElement(['ES', 'US', 'FR', 'DE', 'GB', 'MX', 'AR'], 1 + (rand() % 7)) AS country_code,
+
+    -- Browsers
+    arrayElement(['Chrome', 'Firefox', 'Safari', 'Edge'], 1 + (rand() % 4)) AS browser,
+
+    -- OS
+    arrayElement(['Windows', 'MacOS', 'Linux', 'iOS', 'Android'], 1 + (rand() % 5)) AS os,
+
+    -- Device Type (70% desktop, 20% mobile, 10% tablet)
+    arrayElement(['desktop', 'desktop', 'desktop', 'desktop', 'desktop', 'desktop', 'desktop', 'mobile', 'mobile', 'tablet'], 1 + (rand() % 10)) AS device_type,
+
+    -- Screen size (independent of device_type alias to avoid self-reference)
+    if(rand() % 10 >= 7, 390, 1920) AS screen_width,
+    if(rand() % 10 >= 7, 844, 1080) AS screen_height,
+
+    -- User Agent
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' AS user_agent,
+
+    -- Traffic Type (Enum value)
+    'human' AS traffic_type,
+
+    -- User Hash (SHA256 fits in FixedString(64) as hex = 64 chars)
+    hex(SHA256(s.visitor_id)) AS user_hash,
+
+    -- City
+    arrayElement(['Madrid', 'Barcelona', 'New York', 'London', 'Paris', 'Berlin', 'Mexico City'], 1 + (rand() % 7)) AS city_name,
+
+    -- UTMs (some populated, some empty)
+    if(rand() % 5 = 0, arrayElement(['google', 'facebook', 'newsletter', 'twitter'], 1 + (rand() % 4)), '') AS utm_source,
+    if(rand() % 5 = 0, arrayElement(['cpc', 'organic', 'email', 'social'], 1 + (rand() % 4)), '') AS utm_medium,
+    if(rand() % 5 = 0, arrayElement(['spring_sale', 'launch_2026', 'beta'], 1 + (rand() % 3)), '') AS utm_campaign,
+
+    -- ASN
+    0 AS asn,
+
+    -- Data (JSON)
+    '{}' AS data
+
+FROM _tmp_sessions AS s
+CROSS JOIN numbers(5) AS n  -- 5 events per session = ~50k total
+SETTINGS join_use_nulls = 0;
+
+-- 3. Add "Technical" traffic (Bots, Crawlers)
+INSERT INTO tempoo_analytics.events (
+    site_id, timestamp, event_name, visitor_id, session_id, path, referrer, referrer_domain,
+    country_code, browser, os, device_type, screen_width, screen_height, user_agent,
+    traffic_type, user_hash, city_name, utm_source, utm_medium, utm_campaign, asn, data
+)
+SELECT
+    toUUID('10000000-0000-0000-0000-000000000001') AS site_id,
+    now() - toIntervalMinute(number % 1440) AS timestamp,
+    'pageview' AS event_name,
+    concat('bot_', toString(number)) AS visitor_id,
+    generateUUIDv4() AS session_id,
+    '/' AS path,
+    '' AS referrer,
+    '' AS referrer_domain,
+    if(number % 2 = 0, 'US', 'NL') AS country_code,
+    'Bot' AS browser,
+    'Other' AS os,
+    'bot' AS device_type,
+    0 AS screen_width,
+    0 AS screen_height,
+    arrayElement(
+        ['Googlebot/2.1 (+http://www.google.com/bot.html)',
+         'AhrefsBot/7.0; +http://ahrefs.com/robot/',
+         'InternalBot/1.0'],
+        1 + (number % 3)
+    ) AS user_agent,
+    'bot_ia' AS traffic_type,
+    hex(SHA256(concat('bot_', toString(number)))) AS user_hash,
+    '' AS city_name,
+    '' AS utm_source,
+    '' AS utm_medium,
+    '' AS utm_campaign,
+    0 AS asn,
+    '{"is_bot": true}' AS data
+FROM numbers(1000);
+
+-- 4. Cleanup temp table
+DROP TABLE IF EXISTS _tmp_sessions;

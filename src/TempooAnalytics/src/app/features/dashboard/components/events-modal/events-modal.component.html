@@ -1,0 +1,251 @@
+<div class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[1000] flex items-center justify-center p-4" (click)="close.emit()">
+    <div (click)="$event.stopPropagation()" class="w-full max-w-7xl bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl flex flex-col max-h-[90vh]">
+        <!-- Header -->
+        <div class="px-6 py-4 border-b border-slate-800 bg-slate-800/50 flex items-center justify-between shrink-0">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg bg-sky-500/10 flex items-center justify-center border border-sky-500/20">
+                    <i class="pi pi-list text-sky-400"></i>
+                </div>
+                <div>
+                    <h2 class="text-lg font-bold text-white leading-tight">All Events</h2>
+                    <p class="text-xs text-slate-400">Detailed view of your tracked events</p>
+                </div>
+            </div>
+            <button (click)="close.emit()" class="text-slate-400 hover:text-white transition-colors w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-800">
+                <i class="pi pi-times"></i>
+            </button>
+        </div>
+
+        <!-- Filter Toolbar -->
+        <div class="px-6 py-4 bg-slate-900 border-b border-slate-800 flex flex-col gap-4 shrink-0">
+            <div class="flex flex-wrap items-center gap-4">
+                <!-- Date Picker -->
+                <div class="flex items-center gap-2 bg-slate-950/50 border border-slate-800 rounded-xl px-3 py-1.5 focus-within:border-sky-500/50 transition-colors min-w-[280px] cursor-pointer">
+                    <i class="pi pi-calendar text-slate-500 text-xs"></i>
+                    <p-datepicker #datepicker
+                                [ngModel]="internalDateRange()" 
+                                (ngModelChange)="internalDateRange.set($event); onFilterChange()"
+                                selectionMode="range" 
+                                [readonlyInput]="true" 
+                                [showIcon]="false"
+                                [showTime]="true"
+                                [maxDate]="maxDate"
+                                dateFormat="dd/mm/yy"
+                                appendTo="body"
+                                styleClass="tempoo-datepicker-modal flex-1"
+                                inputStyleClass="bg-transparent border-none text-xs text-gray-200 focus:outline-none outline-none cursor-pointer p-0 w-full"
+                                placeholder="Date range" />
+                </div>
+
+                <div class="h-6 w-px bg-slate-800"></div>
+
+                <!-- Filter Summary (Natural Language) -->
+                <div class="flex-1 flex flex-wrap items-center gap-2">
+                    @if (activeFilters().length === 0 && !showFilterBuilder()) {
+                        <p class="text-xs text-slate-500 italic">No active filters</p>
+                    }
+
+                    @for (filter of activeFilters(); track $index; let i = $index) {
+                        @if (filter.values.length > 0) {
+                        <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-sky-500/5 border border-sky-500/10 text-[11px] group transition-all hover:bg-sky-500/10">
+                            <span class="text-slate-400">{{ getFilterLabel(filter.property) }}</span>
+                            <span class="text-sky-500 font-bold lowercase">{{ getOperatorLabel(filter.operator) }}</span>
+                            <span class="text-white">{{ filter.values.join(', ') }}</span>
+                            <button (click)="removeFilter(i)" class="ml-1 text-slate-500 hover:text-rose-400 transition-colors">
+                                <i class="pi pi-times text-[9px]"></i>
+                            </button>
+                        </div>
+                        }
+                    }
+
+                    <button (click)="showFilterBuilder.set(!showFilterBuilder())" 
+                            [class.bg-sky-500]="showFilterBuilder()"
+                            [class.text-white]="showFilterBuilder()"
+                            class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-black rounded-full transition-all flex items-center gap-2 uppercase tracking-widest border border-slate-700">
+                        <i class="pi" [ngClass]="showFilterBuilder() ? 'pi-minus' : 'pi-plus'"></i>
+                        {{ showFilterBuilder() ? 'Close Builder' : 'Add Filter' }}
+                    </button>
+                </div>
+
+                <!-- Refresh Button -->
+                <button (click)="loadEvents()" class="w-9 h-9 flex items-center justify-center rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors" title="Refresh">
+                    <i class="pi pi-refresh" [class.pi-spin]="loading()"></i>
+                </button>
+            </div>
+
+            <!-- Collapsible Advanced Filter Builder -->
+            @if (showFilterBuilder()) {
+            <div class="flex flex-col gap-2 p-3 rounded-xl bg-slate-950/40 border border-slate-800 animate-in slide-in-from-top-2 duration-200">
+                <div class="flex items-center justify-between mb-1">
+                    <h4 class="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Filter Builder</h4>
+                    <button (click)="addFilter()" class="text-[10px] font-bold text-sky-400 hover:text-sky-300 flex items-center gap-1">
+                        <i class="pi pi-plus text-[8px]"></i>
+                        Add another statement
+                    </button>
+                </div>
+                
+                @for (filter of activeFilters(); track $index; let i = $index) {
+                <div class="flex flex-wrap items-center gap-2 p-2 rounded-lg bg-slate-950/30 border border-slate-800/50">
+                    <div class="flex items-center gap-2">
+                        <i class="pi pi-filter text-slate-600 text-[10px]"></i>
+                        <select [ngModel]="filter.property" (ngModelChange)="updateFilterProperty(i, $event)"
+                            class="bg-transparent border-none text-[11px] text-slate-300 font-medium focus:outline-none cursor-pointer">
+                            @for (prop of availableProperties; track prop.value) {
+                            <option [value]="prop.value">{{ prop.label }}</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="h-4 w-px bg-slate-800/50"></div>
+
+                    <select [ngModel]="filter.operator" (ngModelChange)="updateFilterOperator(i, $event)"
+                        class="bg-transparent border-none text-[11px] text-sky-400 font-bold focus:outline-none cursor-pointer">
+                        @for (op of availableOperators; track op.value) {
+                        <option [value]="op.value">{{ op.label }}</option>
+                        }
+                    </select>
+
+                    <div class="h-4 w-px bg-slate-800/50"></div>
+
+                    <div class="flex-1 flex flex-wrap items-center gap-1.5">
+                        @for (tag of filter.values; track $index; let ti = $index) {
+                        <span
+                            class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-slate-800 text-[9px] text-slate-300 border border-slate-700">
+                            {{ tag }}
+                            <i (click)="removeFilterTag(i, ti)"
+                                class="pi pi-times cursor-pointer hover:text-white text-[8px]"></i>
+                        </span>
+                        }
+                        <input [(ngModel)]="filter.newValue" (keydown.enter)="filter.newValue && updateFilterValue(i, filter.newValue)"
+                            (blur)="filter.newValue && updateFilterValue(i, filter.newValue)" placeholder="Type and press enter..."
+                            class="flex-1 bg-transparent border-none text-[11px] text-white placeholder-slate-600 focus:outline-none min-w-[150px]" />
+                    </div>
+
+                    <button (click)="removeFilter(i)" class="p-1 hover:bg-rose-500/10 text-slate-600 hover:text-rose-400 rounded transition-colors">
+                        <i class="pi pi-trash text-[10px]"></i>
+                    </button>
+                </div>
+                }
+
+                @if (activeFilters().length === 0) {
+                    <div class="py-4 text-center">
+                        <button (click)="addFilter()" class="text-xs text-sky-400 font-bold hover:underline">Click here to add your first filter statement</button>
+                    </div>
+                }
+            </div>
+            }
+        </div>
+
+        <!-- Content -->
+        <div class="p-6 overflow-y-auto flex-1 custom-scrollbar">
+            <div class="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm whitespace-nowrap">
+                        <thead class="bg-slate-800/50 text-slate-400 text-xs uppercase font-bold tracking-wider">
+                            <tr>
+                                <th class="px-4 py-3">User</th>
+                                <th class="px-4 py-3">Session</th>
+                                <th class="px-4 py-3">Date</th>
+                                <th class="px-4 py-3">Event</th>
+                                <th class="px-4 py-3">User Type</th>
+                                <th class="px-4 py-3">Location</th>
+                                <th class="px-4 py-3">Device / OS / Browser</th>
+                                <th class="px-4 py-3">URL</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-800/50">
+                            @if (loading() && events().length === 0) {
+                                <tr>
+                                    <td colspan="7" class="px-4 py-8 text-center text-slate-500">
+                                        <i class="pi pi-spin pi-spinner text-2xl"></i>
+                                    </td>
+                                </tr>
+                            } @else if (events().length === 0) {
+                                <tr>
+                                    <td colspan="7" class="px-4 py-8 text-center text-slate-500">
+                                        No events found for this period.
+                                    </td>
+                                </tr>
+                            } @else {
+                                @for (event of events(); track $index) {
+                                    <tr class="hover:bg-slate-800/30 transition-colors">
+                                        <!-- 1. User -->
+                                        <td class="px-4 py-3">
+                                            <div (click)="filterByUser(event)" class="flex items-center gap-3 cursor-pointer group/user">
+                                                <div class="w-8 h-8 rounded-lg bg-sky-500/10 flex items-center justify-center border border-sky-500/20 text-sky-400 group-hover/user:bg-sky-500 group-hover/user:text-white transition-all">
+                                                    <i class="pi pi-user text-xs"></i>
+                                                </div>
+                                                <div class="flex flex-col">
+                                                    <span class="text-slate-100 font-bold text-sm tracking-tight group-hover/user:text-sky-400 transition-colors" [pTooltip]="'Filter by ' + event.userAlias" tooltipPosition="top">{{ event.userAlias }}</span>
+                                                    <span class="text-[9px] text-slate-500 font-mono uppercase tracking-wider">{{ event.visitorId.slice(0, 8) }}...</span>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <!-- 2. Session -->
+                                        <td class="px-4 py-3">
+                                            <div class="text-[9px] text-slate-500 font-mono uppercase tracking-wider" [pTooltip]="event.sessionId" tooltipPosition="top">
+                                                {{ event.sessionId.slice(0, 8) }}...
+                                            </div>
+                                        </td>
+                                        <!-- 3. Date -->
+                                        <td class="px-4 py-3">
+                                            <div class="text-slate-200 text-xs font-medium">{{ event.timestamp | date:'dd/MM/yyyy HH:mm' }}</div>
+                                        </td>
+                                        <!-- 3. Event -->
+                                        <td class="px-4 py-3 font-medium text-sky-400">
+                                            {{ event.eventName }}
+                                        </td>
+                                        <!-- 4. User Type -->
+                                        <td class="px-4 py-3">
+                                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase border"
+                                                [ngClass]="{
+                                                    'bg-emerald-500/10 text-emerald-500 border-emerald-500/20': event.trafficType === 'human',
+                                                    'bg-amber-500/10 text-amber-500 border-amber-500/20': event.trafficType !== 'human'
+                                                }">
+                                                {{ event.trafficType }}
+                                            </span>
+                                        </td>
+                                        <!-- 5. Location -->
+                                        <td class="px-4 py-3 text-slate-300">
+                                            <div class="flex items-center gap-2">
+                                                @if (event.countryCode && event.countryCode !== 'XX') {
+                                                    <img [src]="'https://flagcdn.com/w20/' + event.countryCode.toLowerCase() + '.png'" class="w-4 h-3 object-cover rounded-[2px]" [alt]="event.countryCode">
+                                                }
+                                                <span>{{ event.cityName || event.countryCode }}</span>
+                                            </div>
+                                        </td>
+                                        <!-- 6. Tech -->
+                                        <td class="px-4 py-3 text-slate-400">
+                                            <div class="flex items-center gap-3">
+                                                <i [class]="getTechIcon('device', event.deviceType)" [pTooltip]="event.deviceType" tooltipPosition="top"></i>
+                                                <i [class]="getTechIcon('os', event.os)" [pTooltip]="event.os" tooltipPosition="top"></i>
+                                                <i [class]="getTechIcon('browser', event.browser)" [pTooltip]="event.browser" tooltipPosition="top"></i>
+                                            </div>
+                                        </td>
+                                        <!-- 7. URL -->
+                                        <td class="px-4 py-3 text-slate-400 truncate max-w-xs" [title]="event.url">
+                                            {{ event.url }}
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                
+                @if (hasMore() && events().length > 0) {
+                    <div class="p-4 border-t border-slate-800 flex justify-center">
+                        <button (click)="loadMore()" [disabled]="loading()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white text-sm font-medium rounded-lg transition-colors flex items-center gap-2 disabled:opacity-50">
+                            @if (loading()) {
+                                <i class="pi pi-spin pi-spinner"></i>
+                            } @else {
+                                <i class="pi pi-refresh"></i>
+                            }
+                            Load More
+                        </button>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>

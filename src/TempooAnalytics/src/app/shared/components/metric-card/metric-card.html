@@ -1,0 +1,32 @@
+<div
+    class="group relative overflow-hidden rounded-2xl bg-slate-900 border border-slate-800 p-5 transition-all hover:bg-slate-800 hover:border-sky-500/30 hover:shadow-lg hover:shadow-sky-500/5">
+    <!-- Subtle Gradient Ornament -->
+    <div
+        class="absolute -right-4 -top-4 h-16 w-16 rounded-full bg-sky-500/5 blur-xl group-hover:bg-sky-500/10 transition-all">
+    </div>
+
+    <div class="flex flex-col gap-1">
+        <div class="flex items-center gap-1">
+            <p class="text-[10px] font-bold uppercase tracking-wider text-[#71717a]">{{ label() }}</p>
+            <ng-content></ng-content>
+        </div>
+        <p class="text-3xl font-bold tracking-tight text-[#fafafa] group-hover:text-white transition-colors">
+            {{ value() }}
+        </p>
+    </div>
+
+    @if (change()) {
+    <div class="mt-3 flex items-center gap-1.5">
+        <div class="flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold"
+            [class]="positive() ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'">
+            <i [class]="positive() ? 'pi pi-arrow-up' : 'pi pi-arrow-down'" class="text-[8px]"></i>
+            {{ change() }}
+        </div>
+        @if (changeLabel()) {
+        <span class="text-[10px] font-medium text-[#52525b]">
+            {{ changeLabel() }}
+        </span>
+        }
+    </div>
+    }
+</div>

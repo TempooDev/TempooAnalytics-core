@@ -1,0 +1,127 @@
+@import "tailwindcss";
+@import "primeicons/primeicons.css";
+@import "maplibre-gl/dist/maplibre-gl.css";
+
+/* ---- LANDING DESIGN SYSTEM SYNCHRONIZATION ---- */
+@theme {
+  --color-primary: #3b82f6;
+  --color-accent: #6366f1;
+  --color-brand-pink: #ec4899;
+}
+
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+:root {
+  --background: #f8fafc;
+  --foreground: #0f172a;
+  --primary: #3b82f6;
+  --accent: #6366f1;
+  --muted: #64748b;
+  --border: #e2e8f0;
+  --surface: #ffffff;
+  --glass-bg: rgba(255, 255, 255, 0.7);
+  --glass-border: rgba(226, 232, 240, 0.8);
+}
+
+[data-theme="dark"] {
+  --background: #020617; /* Deeper Obsidian Navy */
+  --foreground: #f1f5f9;
+  --primary: #3b82f6;
+  --accent: #818cf8;
+  --muted: #94a3b8;
+  --border: #1e293b;
+  --surface: #0f172a;
+  --glass-bg: rgba(15, 23, 42, 0.7);
+  --glass-border: rgba(30, 41, 59, 0.8);
+}
+
+@layer components {
+  .glass {
+    @apply backdrop-blur-md bg-[var(--glass-bg)] border border-[var(--glass-border)];
+  }
+  
+  .gradient-text {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-blue-500 via-indigo-500 to-pink-500;
+  }
+
+  .glow-blue {
+    box-shadow: 0 0 20px -5px rgba(59, 130, 246, 0.3);
+  }
+}
+/* ------------------------------------------------ */
+
+/* PrimeNG v19+ Tempoo Custom Theme Overrides */
+:root {
+    --p-datepicker-input-bg: transparent;
+    --p-datepicker-panel-background: #0f172a; /* slate-900 */
+    --p-datepicker-panel-border-color: #1e293b; /* slate-800 */
+    --p-datepicker-panel-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    
+    --p-datepicker-header-background: #1e293b;
+    --p-datepicker-header-color: #f1f5f9;
+    
+    --p-datepicker-date-color: #cbd5e1;
+    --p-datepicker-date-hover-background: #334155;
+    --p-datepicker-date-selected-background: #6366f1; /* indigo-500 */
+    --p-datepicker-date-selected-color: #ffffff;
+    
+    --p-datepicker-date-range-selected-background: rgba(99, 102, 241, 0.2);
+    
+    --p-datepicker-time-picker-border-color: #1e293b;
+    --p-datepicker-button-ghost-secondary-color: #94a3b8;
+    
+    --p-datepicker-border-radius: 1rem;
+}
+
+/* Fix for PrimeNG DatePicker Text Visibility */
+.p-datepicker {
+    font-family: inherit;
+}
+
+.tempoo-datepicker .p-datepicker-input {
+    font-weight: 600 !important;
+    letter-spacing: -0.01em;
+}
+
+/* Global Button Styles */
+.btn {
+  @apply inline-flex items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer;
+}
+
+.btn-xs {
+  @apply px-3 py-1 text-xs;
+}
+
+/* Variants */
+.btn-primary {
+  @apply bg-indigo-500 text-white hover:bg-indigo-600 border border-transparent;
+  /* shadow handled by base .btn or specific utilities */
+}
+
+/* Add specific hover effect via CSS if @apply has issues with slash opacity */
+.btn-primary:hover {
+  box-shadow: 0 4px 6px -1px rgba(99, 102, 241, 0.3);
+  /* indigo-500 roughly */
+}
+
+.btn-secondary {
+  @apply bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700 hover:text-white;
+}
+
+.btn-danger {
+  @apply bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500 hover:text-white;
+}
+
+.btn-ghost {
+  @apply bg-transparent text-slate-400 hover:bg-slate-800 hover:text-slate-200 border border-transparent;
+}
+
+/* Dark Mode Select Fix */
+select {
+    color-scheme: dark;
+}
+
+select option {
+    background-color: #0f172a; /* slate-900 */
+    color: #f1f5f9; /* slate-100 */
+}

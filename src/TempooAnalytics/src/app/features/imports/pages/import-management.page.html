@@ -1,0 +1,198 @@
+<div class="min-h-screen bg-slate-950 text-slate-50 p-6">
+    <div class="max-w-4xl mx-auto space-y-8">
+        <!-- Header -->
+        <div class="flex items-center gap-4">
+            <a routerLink="/account/sites" class="p-2 rounded-lg hover:bg-slate-900 text-slate-400 hover:text-slate-200 transition-colors">
+                <i class="pi pi-arrow-left"></i>
+            </a>
+            <div>
+                <h1 class="text-2xl font-bold">Import Historical Data</h1>
+                <p class="text-slate-400 text-sm">Bring your history from Google Analytics or Plausible Analytics.</p>
+            </div>
+        </div>
+
+        @if (storageMissing()) {
+            <div class="p-5 bg-amber-500/5 border border-amber-500/20 rounded-2xl text-sm text-slate-300" data-testid="storage-missing">
+                La importación de datos no está disponible en este servidor: no tiene almacenamiento de objetos S3 configurado.
+                Quien administra la instancia puede activarlo siguiendo la guía de almacenamiento S3 del despliegue (docs/selfhost-s3-storage.md).
+            </div>
+        } @else {
+        <!-- Google Analytics 4 -->
+        @if (!ga4Enabled()) {
+            <div class="bg-slate-900/40 border border-slate-800 rounded-2xl p-6 flex items-center gap-3 opacity-75">
+                <div class="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center">
+                    <i class="pi pi-google text-amber-500 text-xl"></i>
+                </div>
+                <div class="flex-1">
+                    <h2 class="font-semibold">Google Analytics</h2>
+                    <p class="text-xs text-slate-500">Importing from Google Analytics 4 is coming soon.</p>
+                </div>
+                <span class="px-2.5 py-1 rounded-full text-[10px] font-bold border bg-amber-500/10 text-amber-500 border-amber-500/20">Coming soon</span>
+            </div>
+        } @else {
+            <div class="bg-slate-900/60 border border-slate-800 rounded-2xl overflow-hidden shadow-xl" data-testid="ga4-card">
+                <div class="p-6 border-b border-slate-800 flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center">
+                        <i class="pi pi-google text-amber-500 text-xl"></i>
+                    </div>
+                    <div>
+                        <h2 class="font-semibold">Google Analytics 4</h2>
+                        <p class="text-xs text-slate-500">Connect your Google account and choose the property to import</p>
+                    </div>
+                </div>
+                <div class="p-6 space-y-4">
+                    @if (!isPaidPlan()) {
+                        <div data-testid="ga4-locked">
+                            <ng-container *ngComponentOutlet="upsell; inputs: { kind: 'import-history' }" />
+                        </div>
+                    } @else {
+                        <div class="p-4 bg-amber-500/5 border border-amber-500/10 rounded-xl">
+                            <p class="text-xs text-slate-400 leading-relaxed">
+                                Tempoo asks Google only for read-only access to Google Analytics and doesn't keep it: the access is used for this download and then discarded.
+                                We import daily visitors, pageviews, bounce rate and visit duration, plus top pages, sources, countries, devices, browsers and operating systems,
+                                for the days before Tempoo recorded traffic for this site.
+                            </p>
+                        </div>
+                        @if (hasImportedHistory()) {
+                            <p class="text-xs text-amber-400 flex items-center gap-2" data-testid="ga4-replace-warning">
+                                <i class="pi pi-exclamation-triangle"></i>
+                                This site already has imported history. Importing from Google Analytics replaces it.
+                            </p>
+                        }
+                        <button (click)="connectGoogle()" [disabled]="connectingGoogle() || isImporting()" class="btn btn-primary btn-sm" data-testid="ga4-connect">
+                            <i class="pi pi-google"></i>
+                            {{ isImporting() ? 'Import in Progress...' : 'Connect with Google' }}
+                        </button>
+                    }
+                </div>
+            </div>
+        }
+
+        <!-- Plausible Import Section -->
+        <div class="bg-slate-900/60 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+            <div class="p-6 border-b border-slate-800 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center">
+                        <i class="pi pi-file-excel text-indigo-500 text-xl"></i>
+                    </div>
+                    <div>
+                        <h2 class="font-semibold">Plausible Analytics</h2>
+                        <p class="text-xs text-slate-500">Upload the export .zip from Plausible</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="p-6 space-y-6">
+                <div class="p-4 bg-indigo-500/5 border border-indigo-500/10 rounded-xl">
+                    <ol class="text-xs text-slate-400 leading-relaxed list-decimal list-inside space-y-1">
+                        <li>In Plausible, open your site and go to <strong>Site settings → Imports &amp; Exports</strong>.</li>
+                        <li>Click <strong>Export data</strong> and download the .zip from the email Plausible sends you.</li>
+                        <li>Upload that .zip here. We import daily visitors, pageviews, bounce rate and visit duration, plus top pages, sources, countries, devices, browsers and operating systems.</li>
+                    </ol>
+                    <p class="text-xs text-slate-500 leading-relaxed mt-3">
+                        Imported days are only used before the first day Tempoo recorded traffic for this site, so nothing is counted twice.
+                        Importing again replaces the previous import.
+                    </p>
+                </div>
+
+                <div class="space-y-4">
+                    <div class="flex items-center justify-center w-full">
+                        <label class="flex flex-col items-center justify-center w-full h-32 border-2 border-slate-800 border-dashed rounded-xl cursor-pointer bg-slate-950 hover:bg-slate-900 transition-colors">
+                            <div class="flex flex-col items-center justify-center pt-5 pb-6">
+                                <i class="pi pi-upload text-slate-500 text-2xl mb-2"></i>
+                                <p class="mb-2 text-sm text-slate-400"><span class="font-semibold">Click to upload</span> or drag and drop</p>
+                                <p class="text-xs text-slate-500">Plausible export .zip (or a daily totals .csv), max 50 MB</p>
+                            </div>
+                            <input type="file" class="hidden" (change)="onPlausibleFileSelected($event)" accept=".zip,.csv" />
+                        </label>
+                    </div>
+
+                    @if (selectedFileName()) {
+                        <div class="flex items-center justify-between p-3 bg-slate-800/50 rounded-lg">
+                            <span class="text-sm text-slate-300 flex items-center gap-2">
+                                <i class="pi pi-file text-sky-400"></i>
+                                {{ selectedFileName() }}
+                            </span>
+                            <button (click)="startPlausibleImport()" [disabled]="submitting() || isImporting()" class="btn btn-primary btn-sm">
+                                {{ isImporting() ? 'Import in Progress...' : 'Start Import' }}
+                            </button>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        }
+
+        <!-- History Section -->
+        <div class="space-y-4">
+            <h2 class="text-lg font-semibold flex items-center gap-2">
+                <i class="pi pi-history text-slate-500"></i>
+                Import History
+            </h2>
+
+            <div class="bg-slate-900/40 border border-slate-800 rounded-2xl overflow-hidden">
+                <table class="w-full text-sm text-left">
+                    <thead class="bg-slate-900/80 text-slate-500 text-[10px] font-bold uppercase tracking-widest border-b border-slate-800">
+                        <tr>
+                            <th class="px-6 py-4">Job ID</th>
+                            <th class="px-6 py-4">Type</th>
+                            <th class="px-6 py-4">Date</th>
+                            <th class="px-6 py-4">Status</th>
+                            <th class="px-6 py-4">Duration</th>
+                            <th class="px-6 py-4 text-right">Rows</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-800/50">
+                        @for (item of imports(); track item.id) {
+                            <tr class="hover:bg-slate-800/30 transition-colors">
+                                <td class="px-6 py-4 font-mono text-xs text-slate-400">#{{ item.id.substring(0, 8) }}</td>
+                                <td class="px-6 py-4">
+                                    <span class="flex items-center gap-2">
+                                        <i class="pi pi-google text-amber-500" *ngIf="item.type === ImportType.GoogleAnalytics4"></i>
+                                        <i class="pi pi-file-excel text-emerald-500" *ngIf="item.type === ImportType.CSV"></i>
+                                        <i class="pi pi-file-excel text-indigo-500" *ngIf="item.type === ImportType.Plausible"></i>
+                                        {{ getTypeLabel(item.type) }}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 text-slate-400">{{ item.createdAt | date:'short' }}</td>
+                                <td class="px-6 py-4">
+                                    <span [class]="'px-2.5 py-1 rounded-full text-[10px] font-bold border ' + getStatusClass(item.status)">
+                                        {{ getStatusLabel(item.status) }}
+                                    </span>
+                                    @if (item.status === ImportStatus.Failed && item.type === ImportType.GoogleAnalytics4) {
+                                        <p class="text-[11px] font-semibold text-red-400 mt-1">{{ ga4FailureTitle(item.errorMessage) }}</p>
+                                    }
+                                    @if (item.status === ImportStatus.Failed && item.errorMessage) {
+                                        <p class="text-[11px] text-red-400 mt-1">{{ item.errorMessage }}</p>
+                                    }
+                                    @if (canReconnect(item)) {
+                                        <button (click)="connectGoogle()" [disabled]="connectingGoogle()" class="text-[11px] text-sky-400 hover:text-sky-300 mt-1 underline" data-testid="ga4-reconnect">
+                                            Connect with Google again
+                                        </button>
+                                    }
+                                </td>
+                                <td class="px-6 py-4 text-slate-400">{{ getDuration(item) }}</td>
+                                <td class="px-6 py-4 text-right font-bold text-sky-400">{{ item.rowsProcessed | number }}</td>
+                            </tr>
+                        }
+                        @if (imports().length === 0 && !loading()) {
+                            <tr>
+                                <td colspan="6" class="px-6 py-12 text-center text-slate-500 italic">
+                                    No import jobs found for this site.
+                                </td>
+                            </tr>
+                        }
+                        @if (loading()) {
+                            <tr>
+                                <td colspan="6" class="px-6 py-12 text-center text-sky-400 animate-pulse font-bold">
+                                    Loading history...
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

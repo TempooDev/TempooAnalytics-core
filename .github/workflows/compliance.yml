@@ -1,0 +1,120 @@
+name: Compliance
+
+# Secret scanning and license audit of the public repository.
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  schedule:
+    - cron: '41 3 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# A new push to a PR cancels the previous run; runs on the default branch and manual runs are never cancelled.
+concurrency:
+  group: compliance-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  gitleaks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Install gitleaks
+        run: |
+          curl -sSfL https://github.com/gitleaks/gitleaks/releases/download/v8.18.4/gitleaks_8.18.4_linux_x64.tar.gz | tar -xz gitleaks
+      # On PRs only the new commits are scanned; any other run scans the whole history.
+      - name: Scan the commits of the PR
+        if: github.event_name == 'pull_request'
+        run: ./gitleaks detect --source . --config .gitleaks.toml --redact --verbose --no-banner --log-opts="origin/${{ github.base_ref }}..HEAD"
+      - name: Scan the whole history
+        if: github.event_name != 'pull_request'
+        run: ./gitleaks detect --source . --config .gitleaks.toml --redact --verbose --no-banner
+
+  licenses-npm:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        dir: [ src/TempooAnalytics, tools/tempoo-analytics ]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: ${{ matrix.dir }}/package-lock.json
+      - name: Install dependencies
+        working-directory: ${{ matrix.dir }}
+        run: npm ci
+      # Exclusions, with reasons:
+      #  - @mapbox/jsonlint-lines-primitives: no license field, it is MIT (a maplibre-gl dependency).
+      #  - primeng: MIT (the detector flags it as "Custom" because of the LICENSE.md file name).
+      - name: Check licenses (production dependencies)
+        working-directory: ${{ matrix.dir }}
+        run: >
+          npx --yes license-checker-rseidelsohn@4.4.2 --production --excludePrivatePackages
+          --excludePackages "@mapbox/jsonlint-lines-primitives@2.0.2;primeng@20.3.0" --onlyAllow "MPL-2.0;OFL-1.1;MIT;ISC;Apache-2.0;BSD-2-Clause;BSD-3-Clause;0BSD;BlueOak-1.0.0;CC0-1.0;Python-2.0;Unlicense;CC-BY-4.0;MIT-0"
+
+  licenses-go:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: src/TempooAnalytics.Go/go.mod
+          cache-dependency-path: src/TempooAnalytics.Go/go.sum
+      - name: Check licenses
+        working-directory: src/TempooAnalytics.Go
+        run: |
+          go install github.com/google/go-licenses@v1.6.0
+          # github.com/segmentio/asm is MIT but go-licenses does not classify its license file; our own module does not have a LICENSE yet.
+          go-licenses check ./... --allowed_licenses=MIT,Apache-2.0,BSD-2-Clause,BSD-3-Clause,ISC,MPL-2.0 \
+            --ignore github.com/segmentio/asm --ignore github.com/TempooDev/TempooAnalytics-core
+
+  licenses-nuget:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '10.0.x'
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', 'Directory.Packages.props', 'global.json') }}
+          restore-keys: nuget-${{ runner.os }}-
+      - name: Restore
+        run: dotnet restore
+      - name: Check licenses
+        run: |
+          dotnet tool install --global dotnet-project-licenses --version 2.7.1
+          export DOTNET_ROLL_FORWARD=Major
+          export PATH="$PATH:$HOME/.dotnet/tools"
+          dotnet-project-licenses -i TempooAnalytics.sln -t -u --allowed-license-types scripts/compliance/nuget-allowed-licenses.json
+
+  # Single check to require in branch protection: passes when every job passed, fails if any failed or was cancelled.
+  compliance-ok:
+    if: always()
+    needs: [ gitleaks, licenses-npm, licenses-go, licenses-nuget ]
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Check results
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "Results: $RESULTS"
+          case " $RESULTS " in
+            *" failure "*|*" cancelled "*|*" skipped "*) echo "::error::A compliance job failed, was cancelled or did not run"; exit 1 ;;
+          esac

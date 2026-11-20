@@ -1,0 +1,364 @@
+@page "/admin/users"
+@model TempooAnalytics.Api.Pages.Admin.UsersModel
+@{
+    Layout = null;
+    // Plans exist only where the billing module serves /admin/tiers (the cloud). Community has no plan column, selector or label.
+    var showPlans = AdminNav.Has(HttpContext, "/admin/tiers");
+}
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Administración - Tempoo Analytics</title>
+    @* Tailwind and the icons are inlined (AdminAssets): no request to a third-party CDN. *@
+    @AdminAssets.Styles
+    <style>
+        body {
+        background-color: #020617;
+        color: #f8fafc;
+        }
+    </style>
+</head>
+
+<body class="min-h-screen">
+    <div class="max-w-6xl mx-auto p-6">
+        <header class="flex items-center justify-between mb-8 border-b border-slate-800 pb-6">
+            <div class="flex items-center gap-6">
+                <div class="flex items-center gap-3">
+                    <img src="/assets/images/tempoo-analytics-optimized.svg" alt="Logo" class="h-8">
+                    <h1 class="text-xl font-bold text-slate-100">Admin <span class="text-sky-500">Console</span></h1>
+                </div>
+                
+                @if (Model.IsUnlocked)
+                {
+                    <nav class="flex items-center gap-1 bg-slate-900 p-1 rounded-lg border border-slate-800">
+                        <a href="/admin/users"
+                           class="px-4 py-1.5 rounded-md text-xs font-bold transition-all bg-sky-500 text-slate-950 shadow-lg shadow-sky-500/20">Usuarios</a>
+                        @foreach (var link in AdminNav.Links(HttpContext, true))
+                        {
+                        <a href="@link.Href"
+                           class="px-4 py-1.5 rounded-md text-xs font-bold transition-all text-slate-400 hover:text-slate-200">@link.Label</a>
+                        }
+                        <a href="/admin/feedback"
+                           class="px-4 py-1.5 rounded-md text-xs font-bold transition-all text-slate-400 hover:text-slate-200">Feedback</a>
+                        @foreach (var link in AdminNav.Links(HttpContext, false))
+                        {
+                        <a href="@link.Href"
+                           class="px-4 py-1.5 rounded-md text-xs font-bold transition-all text-slate-400 hover:text-slate-200">@link.Label</a>
+                        }
+                    </nav>
+                }
+            </div>
+            @if (Model.IsUnlocked)
+            {
+                <form method="post" asp-page-handler="Logout">
+                    <button type="submit"
+                            class="text-slate-500 hover:text-rose-400 text-xs font-medium transition-colors">Cerrar
+                        Sesión</button>
+                    </form>
+                }
+            </header>
+
+            @if (!Model.IsUnlocked)
+            {
+                <div class="max-w-md mx-auto mt-20">
+                    <div class="bg-slate-900 border border-slate-800 rounded-xl p-8 shadow-2xl">
+                        <h2 class="text-2xl font-bold mb-2">Acceso Restringido</h2>
+                        <p class="text-slate-400 text-sm mb-8">Esta área es solo para administradores. Se requiere la Master
+                            Password.</p>
+                    
+                            <form method="post" asp-page-handler="Unlock" class="space-y-4">
+                                <div>
+                                    <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Master Password</label>
+                                    <input type="password" name="MasterPassword" required
+                                           class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-slate-100 focus:ring-2 focus:ring-sky-500 outline-none transition-all">
+                                </div>
+                                <button type="submit"
+                                        class="w-full bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold py-3 rounded-lg transition-transform active:scale-95">
+                                    Desbloquear Panel
+                                </button>
+                            </form>
+                    
+                            @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+                            {
+                                <div class="mt-4 p-3 bg-red-500/10 border border-red-500/20 text-red-500 text-sm rounded-lg">
+                                    @Model.ErrorMessage
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+        else
+                {
+                    <div class="grid grid-cols-1 lg:grid-cols-12 gap-10">
+                        <!-- Create/Edit User Column -->
+                        <div class="lg:col-span-4">
+                            <!-- Create User Form -->
+                            <div id="create-user-container" class="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-lg sticky top-6">
+                                <h2 class="text-lg font-bold mb-6 flex items-center gap-2">
+                                    <span class="w-2 h-2 bg-sky-500 rounded-full"></span>
+                                    Crear Nuevo Usuario
+                                </h2>
+                        
+                                <form method="post" asp-page-handler="CreateUser" class="space-y-4">
+                                    <div>
+                                        <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Nombre de
+                                            Usuario</label>
+                                            <input asp-for="NewUsername" required
+                                                   class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-sky-500">
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Contraseña</label>
+                                                <input type="password" asp-for="NewPassword" required
+                                                       class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-sky-500">
+                                                </div>
+                                                <div>
+                                                    <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Email
+                                                        (Opcional)</label>
+                                                        <input asp-for="NewEmail"
+                                                               class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-sky-500">
+                                                        </div>
+                                                        <div class="flex items-center gap-3 py-2">
+                                                            <input type="checkbox" asp-for="NewIsAdmin" id="check-admin"
+                                                                   class="w-4 h-4 rounded border-slate-700 bg-slate-800 text-sky-500">
+                                                                <label for="check-admin" class="text-sm text-slate-300">Dar permisos de
+                                                                    administrador</label>
+                                                        </div>
+                                                        @if (showPlans)
+                                                        {
+                                                        <div>
+                                                            <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Plan de Suscripción</label>
+                                                            <select asp-for="NewTier" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-sky-500">
+                                                                @foreach(var tier in Model.AllTiers) {
+                                                                    <option value="@tier.Slug">@tier.DisplayName</option>
+                                                                }
+                                                                <option value="free">Free (Default)</option>
+                                                            </select>
+                                                        </div>
+                                                        }
+                                                        <button type="submit"
+                                                                class="w-full bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold py-2.5 rounded-lg text-sm shadow-lg shadow-sky-500/10 transition-all mt-4">
+                                                            Registrar Usuario
+                                                        </button>
+                                                            </form>
+                                                        </div>
+
+                            <!-- Edit User Form (Hidden by default) -->
+                            <div id="edit-user-container" class="hidden bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-lg sticky top-6">
+                                <div class="flex items-center justify-between mb-6">
+                                    <h2 class="text-lg font-bold flex items-center gap-2">
+                                        <span class="w-2 h-2 bg-amber-500 rounded-full"></span>
+                                        Editar Usuario
+                                    </h2>
+                                    <button onclick="cancelEdit()" class="text-slate-500 hover:text-slate-300">
+                                        <i class="pi pi-times"></i>
+                                    </button>
+                                </div>
+                        
+                                <form method="post" asp-page-handler="UpdateUser" class="space-y-4">
+                                    <input type="hidden" asp-for="EditUserId" id="EditUserId">
+                                    <div>
+                                        <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Nombre de Usuario</label>
+                                        <input asp-for="EditUsername" id="EditUsername" required
+                                               class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-sky-500">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Email</label>
+                                        <input asp-for="EditEmail" id="EditEmail"
+                                               class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-sky-500">
+                                    </div>
+                                    <div class="flex items-center gap-3 py-1">
+                                        <input type="checkbox" asp-for="EditIsAdmin" id="EditIsAdmin"
+                                               class="w-4 h-4 rounded border-slate-700 bg-slate-800 text-sky-500">
+                                        <label for="EditIsAdmin" class="text-sm text-slate-300">Administrador</label>
+                                    </div>
+                                    <div class="flex items-center gap-3 py-1">
+                                        <input type="checkbox" asp-for="EditIsActive" id="EditIsActive"
+                                               class="w-4 h-4 rounded border-slate-700 bg-slate-800 text-emerald-500">
+                                        <label for="EditIsActive" class="text-sm text-slate-300">Activo</label>
+                                    </div>
+
+                                    @if (showPlans)
+                                    {
+                                    <div class="mt-2">
+                                        <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Plan de Suscripción</label>
+                                        <select asp-for="EditTier" id="EditTier" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-sky-500">
+                                            @foreach(var tier in Model.AllTiers) {
+                                                <option value="@tier.Slug">@tier.DisplayName</option>
+                                            }
+                                            <option value="free">Free</option>
+                                        </select>
+                                    </div>
+                                    }
+                                    
+                                    <div class="pt-2 border-t border-slate-800/50 mt-4">
+                                        <label class="block text-[10px] font-bold uppercase text-amber-500/70 mb-2">Cambiar Contraseña (Manual)</label>
+                                        <input type="password" asp-for="EditPassword" placeholder="Nueva contraseña..."
+                                               class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-amber-500">
+                                        <p class="text-[9px] text-slate-500 mt-1">Deja vacío para no cambiarla.</p>
+                                    </div>
+
+                                    <button type="submit"
+                                            class="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-2.5 rounded-lg text-sm shadow-lg shadow-amber-500/10 transition-all mt-4">
+                                        Guardar Cambios
+                                    </button>
+                                </form>
+                            </div>
+
+                            @foreach (var c in Model.Contributors)
+                            {
+                                <!-- Panel of a module (shown with the edit form) -->
+                                <div class="hidden user-contrib-panel" data-contrib="@c.Key">
+                                    <partial name="@c.PanelPartial" />
+                                </div>
+                            }
+
+                            <!-- Messages -->
+                            @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+                            {
+                                <div class="mt-4 p-3 bg-red-500/10 border border-red-500/20 text-red-500 text-xs rounded-lg">
+                                    @Model.ErrorMessage
+                                </div>
+                            }
+                            @if (!string.IsNullOrEmpty(Model.SuccessMessage))
+                            {
+                                <div class="mt-4 p-3 bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 text-xs rounded-lg">
+                                    @Model.SuccessMessage
+                                </div>
+                            }
+                        </div>
+
+                        <!-- Users Table Column -->
+                        <div class="lg:col-span-8">
+                            <div class="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-lg">
+                                <table class="w-full text-left">
+                                    <thead>
+                                        <tr class="bg-slate-800/50 text-slate-400 text-[10px] uppercase tracking-wider font-bold">
+                                            <th class="px-6 py-4">Usuario</th>
+                                            @if (showPlans)
+                                            {
+                                            <th class="px-6 py-4">Plan</th>
+                                            }
+                                            @foreach (var c in Model.Contributors)
+                                            {
+                                                <th class="px-6 py-4">@c.ColumnHeader</th>
+                                            }
+                                            <th class="px-6 py-4">Rol / Estado</th>
+                                            <th class="px-6 py-4">Fecha Creación</th>
+                                            <th class="px-6 py-4 text-right">Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-800">
+                                        @foreach (var entry in Model.AllUsers)
+                                        {
+                                            var user = entry.User;
+                                            <tr class="hover:bg-slate-800/30 transition-colors">
+                                                <td class="px-6 py-4">
+                                                    <div class="text-sm font-semibold text-slate-100">@user.Username</div>
+                                                    <div class="text-[10px] text-slate-500">@user.Email</div>
+                                                </td>
+                                                @if (showPlans)
+                                                {
+                                                <td class="px-6 py-4">
+                                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold @(entry.Plan.Contains("pro") ? "bg-amber-500/10 text-amber-500" : entry.Plan.Contains("enterprise") ? "bg-purple-500/10 text-purple-500" : "bg-slate-500/10 text-slate-400")">
+                                                        @entry.Plan.ToUpper()
+                                                    </span>
+                                                </td>
+                                                }
+                                                @foreach (var c in Model.Contributors)
+                                                {
+                                                    <td class="px-6 py-4 text-sm font-semibold text-slate-300">
+                                                        @entry.Extras[c.Key]
+                                                    </td>
+                                                }
+                                                <td class="px-6 py-4">
+                                                    <div class="flex flex-col gap-1">
+                                                        <span
+                                                            class="inline-flex w-fit px-2 py-0.5 rounded text-[10px] font-bold @(user.IsAdmin ? "bg-amber-500/10 text-amber-500 border border-amber-500/20" : "bg-sky-500/10 text-sky-500 border border-sky-500/20")">
+                                                            @(user.IsAdmin ? "ADMIN" : "USER")
+                                                        </span>
+                                                        <span
+                                                            class="text-[9px] @(user.IsActive ? "text-emerald-500" : "text-slate-500") font-medium">
+                                                            @(user.IsActive ? "● ONLINE/ACTIVE" : "○ INACTIVE")
+                                                        </span>
+                                                    </div>
+                                                </td>
+                                                <td class="px-6 py-4 text-xs text-slate-500">
+                                                    @user.CreatedAt.ToLocalTime().ToString("g")
+                                                </td>
+                                                <td class="px-6 py-4 text-right">
+                                                    <div class="flex justify-end gap-1">
+                                                        <button onclick="editUser('@user.Id.Value', '@user.Username', '@user.Email', @user.IsAdmin.ToString().ToLower(), @user.IsActive.ToString().ToLower(), '@entry.Plan', @System.Text.Json.JsonSerializer.Serialize(entry.Extras))"
+                                                                title="Editar Usuario"
+                                                                class="p-2 text-slate-500 hover:text-amber-500 hover:bg-amber-500/10 rounded-lg transition-all">
+                                                            <i class="pi pi-pencil text-xs"></i>
+                                                        </button>
+
+                                                        <form method="post" asp-page-handler="ClearCache" asp-route-userId="@user.Id.Value" class="inline">
+                                                            <button type="submit" title="Limpiar Caché"
+                                                                    class="p-2 text-slate-500 hover:text-emerald-500 hover:bg-emerald-500/10 rounded-lg transition-all">
+                                                                <i class="pi pi-refresh text-xs"></i>
+                                                            </button>
+                                                        </form>
+                                                        
+                                                        <form method="post" asp-page-handler="ResetPassword" asp-route-userId="@user.Id.Value"
+                                                              onsubmit="return confirm('¿Generar nueva contraseña y enviar por email?')">
+                                                            <button type="submit" title="Reset Password"
+                                                                    class="p-2 text-slate-500 hover:text-sky-500 hover:bg-sky-500/10 rounded-lg transition-all">
+                                                                <i class="pi pi-key text-xs"></i>
+                                                            </button>
+                                                        </form>
+
+                                                        <form method="post" asp-page-handler="DeleteUser" asp-route-userId="@user.Id.Value"
+                                                              onsubmit="return confirm('¿Estás seguro de que quieres eliminar a este usuario?')"
+                                                              class="inline">
+                                                            <button type="submit" title="Eliminar Usuario"
+                                                                    class="p-2 text-slate-500 hover:text-rose-500 hover:bg-rose-500/10 rounded-lg transition-all">
+                                                                <i class="pi pi-trash text-xs"></i>
+                                                            </button>
+                                                        </form>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <script>
+                function editUser(id, username, email, isAdmin, isActive, tier, extras) {
+                    document.getElementById('create-user-container').classList.add('hidden');
+                    document.getElementById('edit-user-container').classList.remove('hidden');
+                    
+                    document.getElementById('EditUserId').value = id;
+                    document.getElementById('EditUsername').value = username;
+                    document.getElementById('EditEmail').value = email === 'null' ? '' : email;
+                    document.getElementById('EditIsAdmin').checked = isAdmin;
+                    document.getElementById('EditIsActive').checked = isActive;
+                    const tierSelect = document.getElementById('EditTier'); // absent where there are no plans (community)
+                    if (tierSelect) tierSelect.value = tier;
+
+                    document.querySelectorAll('.user-contrib-panel').forEach(panel => {
+                        panel.classList.remove('hidden');
+                        panel.querySelectorAll('[data-user-id]').forEach(input => input.value = id);
+                        panel.querySelectorAll('[data-user-value]').forEach(el => el.textContent = (extras || {})[panel.dataset.contrib] ?? '');
+                    });
+                    
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+
+                function cancelEdit() {
+                    document.getElementById('create-user-container').classList.remove('hidden');
+                    document.getElementById('edit-user-container').classList.add('hidden');
+                    document.querySelectorAll('.user-contrib-panel').forEach(panel => panel.classList.add('hidden'));
+                }
+            </script>
+        </body>
+
+    </html>

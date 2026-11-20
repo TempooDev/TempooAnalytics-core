@@ -1,0 +1,140 @@
+<div (click)="close.emit()" class="fixed inset-0 z-[110] flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+    <div (click)="$event.stopPropagation()" class="w-full max-w-4xl bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl flex flex-col max-h-[90vh]">
+        <!-- Header -->
+        <div class="px-6 py-4 border-b border-slate-800 flex items-center justify-between bg-slate-800/50 rounded-t-2xl">
+            <div class="flex items-center gap-6">
+                <div>
+                    <h3 class="font-bold text-slate-100 flex items-center gap-2">
+                        <i class="pi pi-directions text-sky-400"></i>
+                        {{ viewMode() === 'referrers' ? 'Referrer Details' : 'Channel Details' }}
+                    </h3>
+                    <p class="text-xs text-gray-400">Showing top {{ viewMode() === 'referrers' ? 'referrers' : 'channels' }} for the selected period</p>
+                </div>
+                <div class="h-8 w-px bg-slate-700 mx-2"></div>
+                <div class="flex items-center gap-4">
+                    <button (click)="switchView('referrers')" 
+                        [class]="viewMode() === 'referrers' ? 'text-sky-400 border-b-2 border-sky-400' : 'text-gray-500 hover:text-gray-300'"
+                        class="text-xs font-bold pb-1 transition-all uppercase tracking-wider">Top Referrers</button>
+                    <button (click)="switchView('channels')" 
+                        [class]="viewMode() === 'channels' ? 'text-sky-400 border-b-2 border-sky-400' : 'text-gray-500 hover:text-gray-300'"
+                        class="text-xs font-bold pb-1 transition-all uppercase tracking-wider">Channels</button>
+                </div>
+            </div>
+            <button (click)="close.emit()" class="p-2 hover:bg-slate-700 rounded-lg transition-colors text-gray-400 hover:text-white">
+                <i class="pi pi-times"></i>
+            </button>
+        </div>
+
+        <!-- Filters & Search -->
+        <div class="p-4 border-b border-slate-800 bg-slate-900 flex items-center gap-4">
+            <div class="relative flex-1">
+                <i class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm"></i>
+                <input 
+                    [ngModel]="searchQuery()" 
+                    (ngModelChange)="searchQuery.set($event)"
+                    type="text" 
+                    [placeholder]="viewMode() === 'referrers' ? 'Filter by referrer...' : 'Filter by channel...'" 
+                    class="w-full bg-slate-950 border border-slate-800 rounded-xl py-2 pl-10 pr-4 text-sm focus:outline-none focus:border-sky-500/50 transition-all text-slate-200"
+                />
+            </div>
+        </div>
+
+        <!-- Table Container -->
+        <div class="flex-1 overflow-auto custom-scrollbar">
+            <table class="w-full text-left border-collapse">
+                <thead class="sticky top-0 bg-slate-900 z-10 shadow-[0_1px_0_0_rgba(30,41,59,1)]">
+                    <tr class="text-[10px] uppercase tracking-wider font-bold text-gray-500 border-b border-slate-800">
+                        <th class="px-6 py-3 cursor-pointer hover:text-sky-400 transition-colors" (click)="toggleSort('referrer')">
+                            {{ viewMode() === 'referrers' ? 'Referrer' : 'Channel' }}
+                            @if(sortColumn() === 'referrer') { <i [class]="sortDirection() === 'asc' ? 'pi pi-sort-alpha-up' : 'pi pi-sort-alpha-down'" class="ml-1 text-[8px]"></i> }
+                        </th>
+                        <th class="px-6 py-3 cursor-pointer hover:text-sky-400 transition-colors text-right" (click)="toggleSort('sessions')">
+                            Sessions
+                            @if(sortColumn() === 'sessions') { <i [class]="sortDirection() === 'asc' ? 'pi pi-sort-amount-up' : 'pi pi-sort-amount-down'" class="ml-1 text-[8px]"></i> }
+                        </th>
+                        <th class="px-6 py-3 cursor-pointer hover:text-sky-400 transition-colors text-right" (click)="toggleSort('percentageSessions')">
+                            % Sessions
+                            @if(sortColumn() === 'percentageSessions') { <i [class]="sortDirection() === 'asc' ? 'pi pi-sort-amount-up' : 'pi pi-sort-amount-down'" class="ml-1 text-[8px]"></i> }
+                        </th>
+                        <th class="px-6 py-3 cursor-pointer hover:text-sky-400 transition-colors text-right" (click)="toggleSort('pageviews')">
+                            Pageviews
+                            @if(sortColumn() === 'pageviews') { <i [class]="sortDirection() === 'asc' ? 'pi pi-sort-amount-up' : 'pi pi-sort-amount-down'" class="ml-1 text-[8px]"></i> }
+                        </th>
+                        <th class="px-6 py-3 cursor-pointer hover:text-sky-400 transition-colors text-right" (click)="toggleSort('percentagePageviews')">
+                            % Pageviews
+                            @if(sortColumn() === 'percentagePageviews') { <i [class]="sortDirection() === 'asc' ? 'pi pi-sort-amount-up' : 'pi pi-sort-amount-down'" class="ml-1 text-[8px]"></i> }
+                        </th>
+                        <th class="px-6 py-3 cursor-pointer hover:text-sky-400 transition-colors text-right" (click)="toggleSort('bounceRate')">
+                            Bounce Rate
+                            @if(sortColumn() === 'bounceRate') { <i [class]="sortDirection() === 'asc' ? 'pi pi-sort-amount-up' : 'pi pi-sort-amount-down'" class="ml-1 text-[8px]"></i> }
+                        </th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-800/50">
+                    @if (isLoading()) {
+                        @for (i of [1,2,3,4,5,6,7,8]; track i) {
+                            <tr class="animate-pulse">
+                                <td class="px-6 py-4"><div class="h-4 bg-slate-800 rounded w-32"></div></td>
+                                <td class="px-6 py-4"><div class="h-4 bg-slate-800 rounded w-16 ml-auto"></div></td>
+                                <td class="px-6 py-4"><div class="h-4 bg-slate-800 rounded w-16 ml-auto"></div></td>
+                                <td class="px-6 py-4"><div class="h-4 bg-slate-800 rounded w-16 ml-auto"></div></td>
+                                <td class="px-6 py-4"><div class="h-4 bg-slate-800 rounded w-16 ml-auto"></div></td>
+                                <td class="px-6 py-4"><div class="h-4 bg-slate-800 rounded w-16 ml-auto"></div></td>
+                            </tr>
+                        }
+                    } @else {
+                        @for (row of filteredReferrers(); track row.referrer) {
+                            <tr class="hover:bg-slate-800/30 transition-colors group">
+                                <td class="px-6 py-4">
+                                    <div class="flex items-center gap-2">
+                                        @if (viewMode() === 'referrers') {
+                                            <div class="w-1.5 h-1.5 rounded-full bg-sky-500/50 group-hover:bg-sky-500 transition-colors"></div>
+                                        } @else {
+                                            <i [class]="getChannelIcon(row.referrer)" class="text-gray-500 group-hover:text-sky-400 transition-colors text-xs w-4"></i>
+                                        }
+                                        <span class="text-sm text-slate-300 font-medium">{{ row.referrer || 'Direct' }}</span>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 text-right">
+                                    <span class="text-sm font-mono text-slate-400 group-hover:text-slate-200">{{ row.sessions | number }}</span>
+                                </td>
+                                <td class="px-6 py-4 text-right">
+                                    <span class="text-xs font-semibold px-2 py-0.5 rounded bg-sky-500/10 text-sky-400 border border-sky-500/20">
+                                        {{ row.percentageSessions | number:'1.1-1' }}%
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 text-right">
+                                    <span class="text-sm font-mono text-slate-400 group-hover:text-slate-200">{{ row.pageviews | number }}</span>
+                                </td>
+                                <td class="px-6 py-4 text-right">
+                                    <span class="text-xs font-semibold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                                        {{ row.percentagePageviews | number:'1.1-1' }}%
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 text-right">
+                                    <span class="text-sm font-mono" [class]="row.bounceRate > 50 ? 'text-rose-400' : 'text-emerald-400'">
+                                        {{ row.bounceRate | number:'1.1-1' }}%
+                                    </span>
+                                </td>
+                            </tr>
+                        }
+                        @if (filteredReferrers().length === 0) {
+                            <tr>
+                                <td colspan="6" class="px-6 py-12 text-center text-gray-500 italic text-sm">
+                                    No referrers found matching your search.
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Footer -->
+        <div class="px-6 py-4 border-t border-slate-800 bg-slate-900/50 flex justify-end gap-3 rounded-b-2xl">
+            <button (click)="close.emit()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm font-bold rounded-xl transition-all border border-slate-700">
+                Close
+            </button>
+        </div>
+    </div>
+</div>

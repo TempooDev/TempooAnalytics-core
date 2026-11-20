@@ -1,0 +1,7 @@
+/* Community build: the core. */
+{
+  "extends": "./tsconfig.app.json",
+  "exclude": [
+    "src/**/*.spec.ts"
+  ]
+}

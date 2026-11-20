@@ -1,0 +1,35 @@
+.helpers {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-top: 8px;
+}
+
+.helpers .link {
+    color: #0ea5e9;
+    cursor: pointer;
+    text-decoration: underline;
+    font-size: 0.9rem
+}
+
+.helpers .divider {
+    color: #999
+}
+
+.dev-box {
+    margin-top: 16px;
+    padding: 12px;
+    background: #f8fafc;
+    border: 1px dashed #e2e8f0;
+    border-radius: 6px;
+    color: #0f172a
+}
+
+.dev-label {
+    font-weight: 600;
+    margin-bottom: 6px
+}
+
+.dev-cred {
+    font-size: 0.95rem
+}
