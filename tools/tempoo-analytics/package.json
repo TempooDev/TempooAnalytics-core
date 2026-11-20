@@ -11,9 +11,9 @@
     "test": "npm run build && vitest run"
   },
   "devDependencies": {
-    "esbuild": "^0.24.0",
+    "esbuild": "^0.28.2",
     "jsdom": "^25.0.1",
-    "vite": "^6.4.6",
+    "vite": "^8.3.8",
     "vitest": "^4.1.12"
   }
 }
