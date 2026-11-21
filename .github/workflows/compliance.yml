@@ -56,12 +56,12 @@ jobs:
         run: npm ci
       # Exclusions, with reasons:
       #  - @mapbox/jsonlint-lines-primitives: no license field, it is MIT (a maplibre-gl dependency).
-      #  - primeng: MIT (the detector flags it as "Custom" because of the LICENSE.md file name).
+      #  - primeng@21.1.10: MIT; npm license field is SEE LICENSE IN LICENSE.md (the detector flags it as "Custom"). Pinned to the exact version on purpose: primeng 22 and @primeicons/angular use the PrimeUI commercial license and must NOT be excluded.
       - name: Check licenses (production dependencies)
         working-directory: ${{ matrix.dir }}
         run: >
           npx --yes license-checker-rseidelsohn@4.4.2 --production --excludePrivatePackages
-          --excludePackages "@mapbox/jsonlint-lines-primitives@2.0.2;primeng@20.3.0" --onlyAllow "MPL-2.0;OFL-1.1;MIT;ISC;Apache-2.0;BSD-2-Clause;BSD-3-Clause;0BSD;BlueOak-1.0.0;CC0-1.0;Python-2.0;Unlicense;CC-BY-4.0;MIT-0"
+          --excludePackages "@mapbox/jsonlint-lines-primitives@2.0.2;primeng@21.1.10" --onlyAllow "MPL-2.0;OFL-1.1;MIT;ISC;Apache-2.0;BSD-2-Clause;BSD-3-Clause;0BSD;BlueOak-1.0.0;CC0-1.0;Python-2.0;Unlicense;CC-BY-4.0;MIT-0"
 
   licenses-go:
     runs-on: ubuntu-latest
